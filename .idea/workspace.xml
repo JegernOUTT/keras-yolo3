@@ -2,6 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="4aa1993d-00c9-4ae3-9037-442751f28479" name="Default" comment="">
+      <change afterPath="$PROJECT_DIR$/callback.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/evaluate.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gen_anchors.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config.json" beforeDir="false" afterPath="$PROJECT_DIR$/config.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/generator.py" beforeDir="false" afterPath="$PROJECT_DIR$/generator.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/predict.py" beforeDir="false" afterPath="$PROJECT_DIR$/predict.py" afterDir="false" />
@@ -9,6 +13,12 @@
       <change beforePath="$PROJECT_DIR$/utils/bbox.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/bbox.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils/image.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/image.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/voc.py" beforeDir="false" afterPath="$PROJECT_DIR$/voc.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/weights.02-0.31.h5" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/yolo.py" beforeDir="false" afterPath="$PROJECT_DIR$/yolo.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/yolo3.h5" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/yolo3_detect.py" beforeDir="false" afterPath="$PROJECT_DIR$/yolo3_detect.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/yolov3.weights" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -18,71 +28,187 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="CoverageDataManager">
-    <SUITE FILE_PATH="coverage/keras_yolo3$Train.coverage" NAME="Train Coverage Results" MODIFIED="1523272056389" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/keras_yolo3$Predict.coverage" NAME="Predict Coverage Results" MODIFIED="1523272682086" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/keras_yolo3$Train.coverage" NAME="Train Coverage Results" MODIFIED="1523287976197" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/keras_yolo3$Generate_anchors.coverage" NAME="Generate anchors Coverage Results" MODIFIED="1523286388185" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/keras_yolo3$Predict.coverage" NAME="Predict Coverage Results" MODIFIED="1523280514748" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+  </component>
+  <component name="FavoritesManager">
+    <favorites_list name="keras-yolo3" />
   </component>
   <component name="FileEditorManager">
-    <leaf>
-      <file leaf-file-name="predict.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/predict.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="439">
-              <caret line="73" selection-start-line="73" selection-end-line="73" />
-              <folding>
-                <element signature="e#24#33#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="config.json" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/config.json">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="408">
-              <caret line="369" column="51" selection-start-line="369" selection-start-column="51" selection-end-line="369" selection-end-column="51" />
-              <folding>
-                <element signature="e#442#9860#0" />
-                <element signature="e#454#658#0" />
-                <element signature="e#9902#10546#0" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="utils.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/utils/utils.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="105">
-              <caret line="173" column="17" selection-start-line="173" selection-start-column="17" selection-end-line="173" selection-end-column="17" />
-              <folding>
-                <element signature="e#0#10#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="image.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/utils/image.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="503">
-              <caret line="34" column="8" selection-start-line="34" selection-start-column="8" selection-end-line="34" selection-end-column="24" />
-              <folding>
-                <element signature="e#0#10#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="train.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/train.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="415">
-              <caret line="141" column="30" selection-start-line="141" selection-start-column="30" selection-end-line="141" selection-end-column="30" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
+    <splitter split-orientation="horizontal" split-proportion="0.6165138">
+      <split-first>
+        <leaf>
+          <file leaf-file-name="config.json" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/config.json">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="136">
+                  <caret line="8" column="6" lean-forward="true" selection-start-line="8" selection-start-column="6" selection-end-line="8" selection-end-column="6" />
+                  <folding>
+                    <element signature="e#454#658#0" />
+                    <element signature="e#670#866#0" />
+                    <element signature="e#878#1074#0" />
+                    <element signature="e#1086#1282#0" />
+                    <element signature="e#1294#1490#0" />
+                    <element signature="e#1502#1698#0" />
+                    <element signature="e#1710#1901#0" />
+                    <element signature="e#1913#2104#0" />
+                    <element signature="e#2116#2307#0" />
+                    <element signature="e#2319#2508#0" />
+                    <element signature="e#2520#2703#0" />
+                    <element signature="e#2715#2903#0" />
+                    <element signature="e#2915#3102#0" />
+                    <element signature="e#3114#3303#0" />
+                    <element signature="e#3315#3500#0" />
+                    <element signature="e#3512#3706#0" />
+                    <element signature="e#3718#3904#0" />
+                    <element signature="e#3916#4102#0" />
+                    <element signature="e#4114#4300#0" />
+                    <element signature="e#4312#4511#0" />
+                    <element signature="e#4523#4722#0" />
+                    <element signature="e#4734#4921#0" />
+                    <element signature="e#4933#5126#0" />
+                    <element signature="e#5138#5331#0" />
+                    <element signature="e#5343#5535#0" />
+                    <element signature="e#5547#5739#0" />
+                    <element signature="e#5751#5943#0" />
+                    <element signature="e#5955#6147#0" />
+                    <element signature="e#6159#6344#0" />
+                    <element signature="e#6356#6548#0" />
+                    <element signature="e#6560#6763#0" />
+                    <element signature="e#6775#6963#0" />
+                    <element signature="e#6975#7163#0" />
+                    <element signature="e#7175#7365#0" />
+                    <element signature="e#7377#7567#0" />
+                    <element signature="e#7579#7769#0" />
+                    <element signature="e#7781#7971#0" />
+                    <element signature="e#7983#8176#0" />
+                    <element signature="e#8188#8388#0" />
+                    <element signature="e#8400#8595#0" />
+                    <element signature="e#8607#8802#0" />
+                    <element signature="e#8814#9004#0" />
+                    <element signature="e#9016#9209#0" />
+                    <element signature="e#9221#9418#0" />
+                    <element signature="e#9430#9643#0" />
+                    <element signature="e#9655#9850#0" />
+                    <element signature="e#9914#10109#0" />
+                    <element signature="e#10121#10322#0" />
+                    <element signature="e#10334#10536#0" />
+                    <element signature="e#10548#10748#0" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="train.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/train.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="-173">
+                  <caret line="154" selection-start-line="154" selection-end-line="154" />
+                  <folding>
+                    <element signature="e#24#39#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="yolo.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/yolo.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="258">
+                  <caret line="282" column="36" selection-start-line="282" selection-start-column="36" selection-end-line="282" selection-end-column="36" />
+                  <folding>
+                    <element signature="e#0#106#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="generator.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/generator.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="1137">
+                  <caret line="102" selection-start-line="102" selection-end-line="102" />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="bbox.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/utils/bbox.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="123">
+                  <caret line="57" selection-start-line="57" selection-end-line="57" />
+                  <folding>
+                    <element signature="e#0#18#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="utils.py" pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/utils/utils.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="228">
+                  <caret line="244" column="11" selection-start-line="244" selection-start-column="4" selection-end-line="244" selection-end-column="11" />
+                  <folding>
+                    <element signature="e#0#11#0" expanded="true" />
+                    <element signature="e#352#4660#0" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="yolo3_detect.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/yolo3_detect.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="243">
+                  <caret line="384" column="55" selection-start-line="384" selection-end-line="385" />
+                  <folding>
+                    <element signature="e#0#15#0" expanded="true" />
+                    <element signature="e#618#2969#0" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="image.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/utils/image.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="493">
+                  <caret line="32" selection-start-line="32" selection-end-line="32" />
+                  <folding>
+                    <element signature="e#0#10#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+        </leaf>
+      </split-first>
+      <split-second>
+        <leaf>
+          <file leaf-file-name="predict.py" pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/predict.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="542">
+                  <caret line="78" selection-start-line="78" selection-end-line="78" />
+                  <folding>
+                    <element signature="e#24#33#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+        </leaf>
+      </split-second>
+    </splitter>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
@@ -91,10 +217,27 @@
       <find>instance</find>
       <find>box</find>
       <find>self.labels</find>
-      <find>load_annotation</find>
       <find>dict[key]</find>
       <find>['box']</find>
       <find>saved_weights_name</find>
+      <find>boxes[i].xmin</find>
+      <find>obj_indx</find>
+      <find>load_annotation</find>
+      <find>self.instances</find>
+      <find>prw</find>
+      <find>create_callbacks</find>
+      <find>correct_yolo_boxes</find>
+      <find>pretrained_weights</find>
+      <find>infer_model</find>
+      <find>* 5</find>
+      <find>yolos</find>
+      <find>r</find>
+      <find>normalize</find>
+      <find>lf.model.predic</find>
+      <find>self.model.predict(new_image)</find>
+      <find>true_yolo_2</find>
+      <find>decode_netout</find>
+      <find>image_h</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -104,13 +247,18 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/preprocessing.py" />
+        <option value="$PROJECT_DIR$/predict.py" />
+        <option value="$PROJECT_DIR$/utils/utils.py" />
+        <option value="$PROJECT_DIR$/evaluate.py" />
+        <option value="$PROJECT_DIR$/gen_anchors.py" />
+        <option value="$PROJECT_DIR$/callback.py" />
+        <option value="$PROJECT_DIR$/utils/image.py" />
+        <option value="$PROJECT_DIR$/yolo3_detect.py" />
+        <option value="$PROJECT_DIR$/yolo.py" />
         <option value="$PROJECT_DIR$/generator.py" />
+        <option value="$PROJECT_DIR$/utils/bbox.py" />
         <option value="$PROJECT_DIR$/train.py" />
         <option value="$PROJECT_DIR$/config.json" />
-        <option value="$PROJECT_DIR$/utils/bbox.py" />
-        <option value="$PROJECT_DIR$/utils/image.py" />
-        <option value="$PROJECT_DIR$/utils/utils.py" />
-        <option value="$PROJECT_DIR$/predict.py" />
       </list>
     </option>
   </component>
@@ -121,8 +269,9 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="1920" />
     <option name="width" value="1920" />
-    <option name="height" value="1044" />
+    <option name="height" value="1080" />
   </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
@@ -150,7 +299,7 @@
   </component>
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/predict.py" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/gen_anchors.py" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="reference.settingsdialog.IDE.editor.colors" />
@@ -167,7 +316,27 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.Predict">
+  <component name="RunManager" selected="Python.Train">
+    <configuration name="Generate anchors" type="PythonConfigurationType" factoryName="Python">
+      <module name="keras-yolo3" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="LD_LIBRARY_PATH" value="/usr/local/cuda/lib64" />
+      </envs>
+      <option name="SDK_HOME" value="/usr/bin/python3.6" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/gen_anchors.py" />
+      <option name="PARAMETERS" value="-c config.json" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+    </configuration>
     <configuration name="Predict" type="PythonConfigurationType" factoryName="Python">
       <module name="keras-yolo3" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -183,7 +352,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/predict.py" />
-      <option name="PARAMETERS" value="-c config.json -w yolo3.h5 -i &quot;/media/oem/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/очереди/Lanser 3MP-16 10_20171110-193448--20171110-194108.avi&quot;" />
+      <option name="PARAMETERS" value="-c config.json -w snapshots/yolo3.h5 -i &quot;/media/oem/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/очереди/Lanser 3MP-16 10_20171110-193448--20171110-194108.avi&quot;" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -210,6 +379,7 @@
     </configuration>
     <list>
       <item itemvalue="Python.Train" />
+      <item itemvalue="Python.Generate anchors" />
       <item itemvalue="Python.Predict" />
     </list>
   </component>
@@ -227,32 +397,32 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="0" width="1920" height="1044" extended-state="6" />
+    <frame x="1920" y="0" width="1920" height="1080" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Event Log" side_tool="true" />
-      <window_info anchor="bottom" id="Database Changes" show_stripe_button="false" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.31798247" />
-      <window_info anchor="bottom" id="Version Control" />
-      <window_info anchor="bottom" id="Python Console" />
-      <window_info anchor="bottom" id="Terminal" />
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2497332" />
-      <window_info anchor="right" id="R Packages" />
-      <window_info anchor="bottom" id="Docker" show_stripe_button="false" />
-      <window_info anchor="right" id="R Graphics" />
-      <window_info anchor="right" id="Database" />
-      <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="right" id="SciView" />
-      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.29166666" />
-      <window_info id="Favorites" side_tool="true" />
-      <window_info anchor="right" id="Commander" order="0" weight="0.4" />
-      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
-      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-      <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="TODO" order="12" />
+      <window_info anchor="bottom" id="Event Log" order="3" sideWeight="0.50053364" side_tool="true" weight="0.4276316" />
+      <window_info anchor="bottom" id="Database Changes" order="2" show_stripe_button="false" />
+      <window_info active="true" anchor="bottom" id="Run" order="8" sideWeight="0.4994664" visible="true" weight="0.28481013" />
+      <window_info anchor="bottom" id="Version Control" order="1" />
+      <window_info anchor="bottom" id="Python Console" order="5" />
+      <window_info anchor="bottom" id="Terminal" order="4" />
+      <window_info content_ui="combo" id="Project" order="1" sideWeight="0.49916247" visible="true" weight="0.12753469" />
+      <window_info anchor="right" id="R Packages" order="4" />
+      <window_info anchor="bottom" id="Docker" order="0" show_stripe_button="false" />
+      <window_info anchor="right" id="R Graphics" order="0" />
+      <window_info anchor="right" id="Database" order="1" />
+      <window_info anchor="bottom" id="Find" order="7" />
+      <window_info anchor="right" id="SciView" order="2" />
+      <window_info id="Structure" order="2" side_tool="true" weight="0.25" />
+      <window_info anchor="bottom" id="Debug" order="9" weight="0.30811402" />
+      <window_info id="Favorites" order="0" sideWeight="0.5008375" side_tool="true" weight="0.12753469" />
+      <window_info anchor="right" id="Commander" order="3" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="5" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="11" weight="0.4" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="6" weight="0.25" />
+      <window_info anchor="bottom" id="Message" order="6" />
+      <window_info anchor="bottom" id="Cvs" order="10" weight="0.25" />
     </layout>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -263,31 +433,10 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="9" />
+      <option name="time" value="19" />
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/voc.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="826">
-          <caret line="51" column="32" lean-forward="true" selection-start-line="51" selection-start-column="32" selection-end-line="51" selection-end-column="32" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file:///usr/local/lib/python3.6/dist-packages/keras/utils/data_utils.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1640">
-          <caret line="560" selection-start-line="560" selection-end-line="560" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/generator.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="143">
-          <caret line="206" column="82" selection-start-line="206" selection-start-column="82" selection-end-line="206" selection-end-column="82" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/old_config.json">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="170">
@@ -299,76 +448,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/yolo3_detect.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-80">
-          <caret line="401" column="10" selection-start-line="401" selection-start-column="4" selection-end-line="401" selection-end-column="10" />
-          <folding>
-            <element signature="e#0#15#0" expanded="true" />
-            <element signature="e#618#2969#0" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/preprocessing.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-442">
-          <caret line="55" selection-start-line="55" selection-end-line="55" />
-          <folding>
-            <element signature="e#0#11#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/yolo.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="447">
-          <caret line="318" column="36" selection-start-line="318" selection-start-column="25" selection-end-line="318" selection-end-column="36" />
-          <folding>
-            <element signature="e#0#106#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/train.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="415">
-          <caret line="141" column="30" selection-start-line="141" selection-start-column="30" selection-end-line="141" selection-end-column="30" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/config.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="408">
-          <caret line="369" column="51" selection-start-line="369" selection-start-column="51" selection-end-line="369" selection-end-column="51" />
-          <folding>
-            <element signature="e#442#9860#0" />
-            <element signature="e#454#658#0" />
-            <element signature="e#9902#10546#0" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/utils/bbox.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="816">
-          <caret line="48" column="41" selection-start-line="48" selection-start-column="37" selection-end-line="48" selection-end-column="41" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/utils/image.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="503">
-          <caret line="34" column="8" selection-start-line="34" selection-start-column="8" selection-end-line="34" selection-end-column="24" />
-          <folding>
-            <element signature="e#0#10#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file:///usr/local/lib/python3.6/dist-packages/keras/models.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="215">
@@ -376,22 +455,222 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/utils/utils.py">
+    <entry file="file://$PROJECT_DIR$/utils/utils.py.orig">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="105">
-          <caret line="173" column="17" selection-start-line="173" selection-start-column="17" selection-end-line="173" selection-end-column="17" />
+        <state relative-caret-position="295">
+          <caret line="85" column="32" selection-start-line="85" selection-start-column="32" selection-end-line="85" selection-end-column="32" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2018.1/system/python_stubs/-1247971763/posix.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-11">
+          <caret line="892" column="4" selection-start-line="892" selection-start-column="4" selection-end-line="892" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gen_anchors.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="130">
+          <caret line="124" column="48" selection-start-line="124" selection-start-column="48" selection-end-line="124" selection-end-column="48" />
+          <folding>
+            <element signature="e#0#13#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/callback.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret line="18" column="56" selection-start-line="18" selection-start-column="56" selection-end-line="18" selection-end-column="56" />
           <folding>
             <element signature="e#0#10#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file:///usr/local/lib/python3.6/dist-packages/keras/callbacks.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="261">
+          <caret line="184" column="20" selection-start-line="184" selection-start-column="8" selection-end-line="184" selection-end-column="20" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/image.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="493">
+          <caret line="32" selection-start-line="32" selection-end-line="32" />
+          <folding>
+            <element signature="e#0#10#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/voc.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="673">
+          <caret line="51" column="32" lean-forward="true" selection-start-line="51" selection-start-column="32" selection-end-line="51" selection-end-column="32" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/evaluate.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="629">
+          <caret line="40" column="28" selection-start-line="40" selection-start-column="28" selection-end-line="40" selection-end-column="28" />
+          <folding>
+            <element signature="e#24#39#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/preprocessing.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-789">
+          <caret line="55" selection-start-line="55" selection-end-line="55" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/predict.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="439">
-          <caret line="73" selection-start-line="73" selection-end-line="73" />
+        <state relative-caret-position="542">
+          <caret line="78" selection-start-line="78" selection-end-line="78" />
           <folding>
             <element signature="e#24#33#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/lib/python3.6/dist-packages/keras/utils/data_utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="204">
+          <caret line="391" selection-start-line="391" selection-end-line="391" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/lib/python3.6/multiprocessing/pool.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="201">
+          <caret line="118" selection-start-line="118" selection-end-line="118" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/yolo3_detect.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="243">
+          <caret line="384" column="55" selection-start-line="384" selection-end-line="385" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+            <element signature="e#618#2969#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/config.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="136">
+          <caret line="8" column="6" lean-forward="true" selection-start-line="8" selection-start-column="6" selection-end-line="8" selection-end-column="6" />
+          <folding>
+            <element signature="e#454#658#0" />
+            <element signature="e#670#866#0" />
+            <element signature="e#878#1074#0" />
+            <element signature="e#1086#1282#0" />
+            <element signature="e#1294#1490#0" />
+            <element signature="e#1502#1698#0" />
+            <element signature="e#1710#1901#0" />
+            <element signature="e#1913#2104#0" />
+            <element signature="e#2116#2307#0" />
+            <element signature="e#2319#2508#0" />
+            <element signature="e#2520#2703#0" />
+            <element signature="e#2715#2903#0" />
+            <element signature="e#2915#3102#0" />
+            <element signature="e#3114#3303#0" />
+            <element signature="e#3315#3500#0" />
+            <element signature="e#3512#3706#0" />
+            <element signature="e#3718#3904#0" />
+            <element signature="e#3916#4102#0" />
+            <element signature="e#4114#4300#0" />
+            <element signature="e#4312#4511#0" />
+            <element signature="e#4523#4722#0" />
+            <element signature="e#4734#4921#0" />
+            <element signature="e#4933#5126#0" />
+            <element signature="e#5138#5331#0" />
+            <element signature="e#5343#5535#0" />
+            <element signature="e#5547#5739#0" />
+            <element signature="e#5751#5943#0" />
+            <element signature="e#5955#6147#0" />
+            <element signature="e#6159#6344#0" />
+            <element signature="e#6356#6548#0" />
+            <element signature="e#6560#6763#0" />
+            <element signature="e#6775#6963#0" />
+            <element signature="e#6975#7163#0" />
+            <element signature="e#7175#7365#0" />
+            <element signature="e#7377#7567#0" />
+            <element signature="e#7579#7769#0" />
+            <element signature="e#7781#7971#0" />
+            <element signature="e#7983#8176#0" />
+            <element signature="e#8188#8388#0" />
+            <element signature="e#8400#8595#0" />
+            <element signature="e#8607#8802#0" />
+            <element signature="e#8814#9004#0" />
+            <element signature="e#9016#9209#0" />
+            <element signature="e#9221#9418#0" />
+            <element signature="e#9430#9643#0" />
+            <element signature="e#9655#9850#0" />
+            <element signature="e#9914#10109#0" />
+            <element signature="e#10121#10322#0" />
+            <element signature="e#10334#10536#0" />
+            <element signature="e#10548#10748#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/train.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-173">
+          <caret line="154" selection-start-line="154" selection-end-line="154" />
+          <folding>
+            <element signature="e#24#39#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/yolo.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="258">
+          <caret line="282" column="36" selection-start-line="282" selection-start-column="36" selection-end-line="282" selection-end-column="36" />
+          <folding>
+            <element signature="e#0#106#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/generator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1137">
+          <caret line="102" selection-start-line="102" selection-end-line="102" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/bbox.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="123">
+          <caret line="57" selection-start-line="57" selection-end-line="57" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="228">
+          <caret line="244" column="11" selection-start-line="244" selection-start-column="4" selection-end-line="244" selection-end-column="11" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+            <element signature="e#352#4660#0" />
           </folding>
         </state>
       </provider>

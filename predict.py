@@ -8,7 +8,6 @@ from utils.utils import get_yolo_boxes
 from utils.bbox import draw_boxes
 from keras.models import load_model
 from tqdm import tqdm
-import numpy as np
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # define the GPU to work on here

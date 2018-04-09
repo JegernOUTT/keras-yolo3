@@ -427,6 +427,7 @@ def _main_(args):
     # write the image with bounding boxes to file
     cv2.imwrite(image_path[:-4] + '_detected' + image_path[-4:], (image).astype('uint8')) 
 
+
 if __name__ == '__main__':
     args = argparser.parse_args()
     _main_(args)

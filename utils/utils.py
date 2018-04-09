@@ -1,3 +1,5 @@
+import math
+
 import cv2
 import numpy as np
 from .bbox import BoundBox, bbox_iou
@@ -126,14 +128,27 @@ def correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w):
         new_h = net_w
         new_w = (image_w * net_h) / image_h
 
-    for i in range(len(boxes)):
+    valid_boxes = []
+    is_valid = lambda x: math.isfinite(x) and not math.isnan(x)
+    for box in boxes:
+        if not is_valid(box.xmin) or not is_valid(box.xmax) or not is_valid(box.ymin) or not is_valid(box.ymax):
+            continue
+        box.xmin = box.xmin if box.xmin > 0 else 0
+        box.ymin = box.ymin if box.ymin > 0 else 0
+        box.xmax = box.xmax if box.xmax < 1.0 else 1.0
+        box.ymax = box.ymax if box.ymax < 1.0 else 1.0
+        valid_boxes.append(box)
+
+    for i in range(len(valid_boxes)):
         x_offset, x_scale = (net_w - new_w) / 2. / net_w, float(new_w) / net_w
         y_offset, y_scale = (net_h - new_h) / 2. / net_h, float(new_h) / net_h
 
-        boxes[i].xmin = int((boxes[i].xmin - x_offset) / x_scale * image_w)
-        boxes[i].xmax = int((boxes[i].xmax - x_offset) / x_scale * image_w)
-        boxes[i].ymin = int((boxes[i].ymin - y_offset) / y_scale * image_h)
-        boxes[i].ymax = int((boxes[i].ymax - y_offset) / y_scale * image_h)
+        valid_boxes[i].xmin = int((valid_boxes[i].xmin - x_offset) / x_scale * image_w)
+        valid_boxes[i].xmax = int((valid_boxes[i].xmax - x_offset) / x_scale * image_w)
+        valid_boxes[i].ymin = int((valid_boxes[i].ymin - y_offset) / y_scale * image_h)
+        valid_boxes[i].ymax = int((valid_boxes[i].ymax - y_offset) / y_scale * image_h)
+
+    return valid_boxes
 
 
 def do_nms(boxes, nms_thresh):
@@ -178,7 +193,8 @@ def decode_netout(netout, anchors, obj_thresh, net_h, net_w):
             # 4th element is objectness score
             objectness = netout[row, col, b, 4]
 
-            if (objectness <= obj_thresh): continue
+            if objectness <= obj_thresh:
+                continue
 
             # first 4 elements are x, y, w, and h
             x, y, w, h = netout[row, col, b, :4]
@@ -239,7 +255,7 @@ def get_yolo_boxes(model, image, net_h, net_w, anchors, obj_thresh, nms_thresh):
         boxes += decode_netout(yolos[i][0], yolo_anchors, obj_thresh, net_h, net_w)
 
     # correct the sizes of the bounding boxes
-    correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
+    boxes = correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
 
     # suppress non-maximal boxes
     do_nms(boxes, nms_thresh)

@@ -1,19 +1,21 @@
 {
-    "model" : {
+    "model" :
+    {
         "min_input_size":       352,
         "max_input_size":       608,
-        "anchors":              [10,13,  16,30,  33,23,  30,61,  62,45,  59,119,  116,90,  156,198,  373,326],
+        "anchors":              [10,37, 17,71, 28,104, 28,50, 42,79, 45,148, 70,92, 77,181, 193,310],
         "max_box_per_image":    50,
         "labels":               ["person"]
     },
 
-    "train": {
+    "train":
+    {
         "images_dir":           "/media/oem/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/peoples/",
         "datasets_to_train":
         [
           {
             "path": "coco/2017/train2017",
-            "count_to_process": "100000",
+            "count_to_process": "10000",
             "only_verified": false,
             "max_bbox_area": 1.0,
             "min_bbox_area": 0.0005
@@ -356,25 +358,25 @@
             "only_verified": true,
             "max_bbox_area": 1.0,
             "min_bbox_area": 0.0005
+          },
+          {
+            "path": "validation_queue_ai",
+            "count_to_process": "all",
+            "only_verified": true,
+            "max_bbox_area": 1.0,
+            "min_bbox_area": 0.0005
           }
         ],
 
         "train_times":          1,
-        "pretrained_weights":   "weights.02-0.31.h5",
+        "pretrained_weights":   "./snapshots/best_weights.h5",
         "batch_size":           6,
         "learning_rate":        1e-4,
-        "nb_epochs":            1000,
-        "warmup_epochs":        0,
+        "nb_epochs":            50,
+        "warmup_epochs":        3,
         "ignore_thresh":        0.5,
 
-        "saved_weights_name":   "weights.02-0.31.h5",
+        "saved_weights_name":   "./snapshots/",
         "debug":                true
-    },
-
-    "valid": {
-        "valid_image_folder":   "",
-        "valid_annot_folder":   "",
-
-        "valid_times":          1
     }
 }

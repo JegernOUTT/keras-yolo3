@@ -5,19 +5,18 @@ import copy
 
 def _rand_scale(scale):
     scale = np.random.uniform(1, scale)
-    return scale if (np.random.randint(2) == 0) else 1. / scale;
+    return scale if (np.random.randint(2) == 0) else 1. / scale
 
 
 def _constrain(min_v, max_v, value):
-    if value < min_v:
-        return min_v
-    if value > max_v:
-        return max_v
+    if value < min_v: return min_v
+    if value > max_v: return max_v
     return value
 
 
 def random_flip(image, flip):
-    if flip == 1: return cv2.flip(image, 1)
+    if flip == 1:
+        return cv2.flip(image, 1)
     return image
 
 
@@ -29,7 +28,7 @@ def correct_bounding_boxes(boxes, new_w, new_h, net_w, net_h, dx, dy, flip, imag
 
     # correct sizes and positions
     sx, sy = float(new_w) / image_w, float(new_h) / image_h
-    zero_boxes = []
+    zero_boxes = set()
 
     for i in range(len(boxes)):
         boxes[i]['xmin'] = int(_constrain(0, net_w, boxes[i]['xmin'] * sx + dx))
@@ -38,7 +37,7 @@ def correct_bounding_boxes(boxes, new_w, new_h, net_w, net_h, dx, dy, flip, imag
         boxes[i]['ymax'] = int(_constrain(0, net_h, boxes[i]['ymax'] * sy + dy))
 
         if boxes[i]['xmax'] <= boxes[i]['xmin'] or boxes[i]['ymax'] <= boxes[i]['ymin']:
-            zero_boxes += [i]
+            zero_boxes.add(i)
             continue
 
         if flip == 1:
