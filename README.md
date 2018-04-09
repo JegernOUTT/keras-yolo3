@@ -1,9 +1,9 @@
-# YOLO3 (Detection and Training, Evaluation in progress#
+# YOLO3 (Detection, Training, and Evaluation)
 
 ## Todo list:
 - [x] Yolo3 detection
 - [x] Yolo3 training (warmup and multi-scale)
-- [ ] Evaluation
+- [x] Evaluation
 - [ ] Multi-GPU training
 - [ ] MobileNet, DenseNet, ResNet, and VGG backends
 
@@ -85,6 +85,12 @@ https://1drv.ms/u/s!ApLdDEW3ut5fgQXa7GzSlG-mdza6
 By the end of this process, the code will write the weights of the best model to file best_weights.h5 (or whatever name specified in the setting "saved_weights_name" in the config.json file). The training process stops when the loss on the validation set is not improved in 3 consecutive epoches.
 
 ### 5. Perform detection using trained weights on an image by running
-`python predict.py -c config.json -w /path/to/best_weights.h5 -i /path/to/image/or/video`
+`python predict.py -c config.json -i /path/to/image/or/video`
 
 It carries out detection on the image and write the image with detected bounding boxes to the same folder.
+
+## Evaluation
+
+`python evaluate.py -c config.json`
+
+Compute the mAP performance of the model defined in `saved_weights_name` on the validation dataset defined in `valid_image_folder` and `valid_annot_folder`.

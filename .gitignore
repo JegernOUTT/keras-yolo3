@@ -155,6 +155,7 @@ fabric.properties
 # NN models and weights
 *.h5
 *.weights
+./snapshots
 
 # Pictures
 *.jpg
