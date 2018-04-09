@@ -1,13 +1,14 @@
 {
     "model" : {
-        "min_input_size":       352,
-        "max_input_size":       608,
-        "anchors":              [10,13,  16,30,  33,23,  30,61,  62,45,  59,119,  116,90,  156,198,  373,326],
-        "max_box_per_image":    50,
+        "backend":              "ResNet50",
+        "input_size":           608,
+        "anchors":              [0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828],
+        "max_box_per_image":    100,
         "labels":               ["person"]
     },
 
     "train": {
+        "gpu_count":            1,
         "images_dir":           "/media/oem/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/peoples/",
         "datasets_to_train":
         [
@@ -358,23 +359,21 @@
             "min_bbox_area": 0.0005
           }
         ],
-
         "train_times":          1,
-        "pretrained_weights":   "weights.02-0.31.h5",
-        "batch_size":           6,
-        "learning_rate":        1e-4,
+
+        "pretrained_weights":   "resnet50/weights.02-0.08.h5",
+        "batch_size":           10,
+        "learning_rate":        1e-5,
         "nb_epochs":            1000,
         "warmup_epochs":        0,
-        "ignore_thresh":        0.5,
 
-        "saved_weights_name":   "weights.02-0.31.h5",
-        "debug":                true
-    },
+        "object_scale":         5.0,
+        "no_object_scale":      1.0,
+        "coord_scale":          1.0,
+        "class_scale":          1.0,
+        "saved_weights_dir":    "resnet50",
 
-    "valid": {
-        "valid_image_folder":   "",
-        "valid_annot_folder":   "",
-
-        "valid_times":          1
+        "save_every_n_epoch":   2,
+        "debug":                false
     }
 }
