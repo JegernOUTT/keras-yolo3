@@ -13,14 +13,6 @@ from utils.utils import normalize, evaluate
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # define the GPU to work on here
 
-argparser = argparse.ArgumentParser(
-    description='Evaluate YOLO_v3 model on any dataset')
-
-argparser.add_argument(
-    '-c',
-    '--conf',
-    help='path to configuration file')
-
 
 def _main_(args):
     config_path = args.conf
@@ -28,13 +20,12 @@ def _main_(args):
     with open(config_path) as config_buffer:
         config = json.loads(config_buffer.read())
 
+    os.environ['CUDA_VISIBLE_DEVICES'] = config['train']['gpus']
     ###############################
     #   Create the validation generator
     ###############################
     labels = config['model']['labels']
     train_ints, valid_ints = load_images(config)
-    from train import filter_categories
-    filter_categories(train_ints, valid_ints, labels)
 
     labels = sorted(labels.keys())
 
@@ -67,5 +58,9 @@ def _main_(args):
 
 
 if __name__ == '__main__':
+    argparser = argparse.ArgumentParser(
+        description='Evaluate YOLO_v3 model on any dataset')
+    argparser.add_argument('-c', '--conf', help='path to configuration file')
+
     args = argparser.parse_args()
     _main_(args)

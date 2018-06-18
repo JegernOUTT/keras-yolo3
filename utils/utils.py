@@ -1,4 +1,6 @@
+import datetime
 import math
+import tqdm
 
 import cv2
 import numpy as np
@@ -13,10 +15,10 @@ def evaluate(model,
              generator,
              iou_threshold=0.5,
              obj_thresh=0.5,
-             nms_thresh=0.45,
-             net_h=416,
-             net_w=416,
-             save_path=None):
+             nms_thresh=0.3,
+             net_h=608,
+             net_w=608,
+             batch_size=32):
     """ Evaluate a given dataset using a given model.
     code originally from https://github.com/fizyr/keras-retinanet
     # Arguments
@@ -31,37 +33,45 @@ def evaluate(model,
     all_detections = [[None for i in range(generator.num_classes())] for j in range(generator.size())]
     all_annotations = [[None for i in range(generator.num_classes())] for j in range(generator.size())]
 
-    for i in range(generator.size()):
-        raw_image = generator.load_image(i)
+    for i in np.arange(0, generator.size(), batch_size):
+        if i + batch_size > generator.size():
+            batch_size = generator.size() - i
+        raw_images = np.array([generator.load_image(j) for j in range(i, i + batch_size)])
+        pred_boxes = get_yolo_boxes_batch(model, raw_images, net_h, net_w,
+                                          generator.get_anchors(), obj_thresh, nms_thresh)
+        # pred_boxes = [[box for box in pred if box.get_score() > obj_thresh] for pred in pred_boxes]
 
-        # make the boxes and the labels
-        pred_boxes = get_yolo_boxes(model, raw_image, net_h, net_w, generator.get_anchors(), obj_thresh, nms_thresh)
+        for shifted_i in range(i, i + batch_size):
+            score = np.array([box.get_score() for box in pred_boxes[shifted_i - i]])
+            pred_labels = np.array([box.label for box in pred_boxes[shifted_i - i]])
 
-        score = np.array([box.get_score() for box in pred_boxes])
-        pred_labels = np.array([box.label for box in pred_boxes])
-
-        if len(pred_boxes) > 0:
-            pred_boxes = np.array([[box.xmin, box.ymin, box.xmax, box.ymax, box.get_score()] for box in pred_boxes])
-        else:
-            pred_boxes = np.array([[]])
+            if len(pred_boxes[shifted_i - i]) > 0:
+                current_pred_boxes = np.array([[int(box.xmin), int(box.ymin), int(box.xmax), int(box.ymax), box.get_score()]
+                                               for box in pred_boxes[shifted_i - i]])
+            else:
+                current_pred_boxes = np.array([[]])
 
             # sort the boxes and the labels according to scores
-        score_sort = np.argsort(-score)
-        pred_labels = pred_labels[score_sort]
-        pred_boxes = pred_boxes[score_sort]
+            score_sort = np.argsort(-score)
+            pred_labels = pred_labels[score_sort]
+            current_pred_boxes = current_pred_boxes[score_sort]
 
-        # copy detections to all_detections
-        for label in range(generator.num_classes()):
-            all_detections[i][label] = pred_boxes[pred_labels == label, :]
+            # copy detections to all_detections
+            for label in range(generator.num_classes()):
+                all_detections[shifted_i][label] = current_pred_boxes[pred_labels == label, :]
 
-        annotations = generator.load_annotation(i)
+            annotations = generator.load_annotation(shifted_i)
 
-        # copy detections to all_annotations
-        for label in range(generator.num_classes()):
-            all_annotations[i][label] = annotations[annotations[:, 4] == label, :4].copy()
+            # copy detections to all_annotations
+            for label in range(generator.num_classes()):
+                if len(np.squeeze(annotations)) > 0:
+                    all_annotations[shifted_i][label] = annotations[annotations[:, 4] == label, :4].copy()
+                else:
+                    all_annotations[shifted_i][label] = np.array([])
 
     # compute mAP by comparing all detections and all annotations
     average_precisions = {}
+    recalls = {}
 
     for label in range(generator.num_classes()):
         false_positives = np.zeros((0,))
@@ -111,13 +121,14 @@ def evaluate(model,
 
         # compute recall and precision
         recall = true_positives / num_annotations
+        recalls[label] = np.max(recall) if len(recall) else 0
         precision = true_positives / np.maximum(true_positives + false_positives, np.finfo(np.float64).eps)
 
         # compute average precision
         average_precision = compute_ap(recall, precision)
         average_precisions[label] = average_precision
 
-    return average_precisions
+    return recalls, average_precisions
 
 
 def correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w):
@@ -171,12 +182,11 @@ def do_nms(boxes, nms_thresh):
                 if bbox_iou(boxes[index_i], boxes[index_j]) >= nms_thresh:
                     boxes[index_j].classes[c] = 0
 
-
+ 
 def decode_netout(netout, anchors, obj_thresh, net_h, net_w):
     grid_h, grid_w = netout.shape[:2]
     nb_box = 3
     netout = netout.reshape((grid_h, grid_w, nb_box, -1))
-    nb_class = netout.shape[-1] - 5
 
     boxes = []
 
@@ -226,7 +236,7 @@ def preprocess_input(image, net_h, net_w):
         new_h = net_h
 
     # resize the image to the new size
-    resized = cv2.resize(image[:, :, ::-1] / 255., (new_w, new_h))
+    resized = cv2.resize(image[:, :, ::-1] / 255., (new_w, new_h), cv2.INTER_LANCZOS4)
 
     # embed the image into the standard letter box
     new_image = np.ones((net_h, net_w, 3)) * 0.5
@@ -234,6 +244,30 @@ def preprocess_input(image, net_h, net_w):
     new_image = np.expand_dims(new_image, 0)
 
     return new_image
+
+
+def preprocess_input_batch(images, net_h, net_w):
+    preprocessed_images = np.zeros((images.shape[0], net_h, net_w, 3), dtype=np.float)
+    for i, image in enumerate(images):
+        new_h, new_w, _ = image.shape
+
+        # determine the new size of the image
+        if (float(net_w) / new_w) < (float(net_h) / new_h):
+            new_h = (new_h * net_w) // new_w
+            new_w = net_w
+        else:
+            new_w = (new_w * net_h) // new_h
+            new_h = net_h
+
+        # resize the image to the new size
+        resized = cv2.resize(image[:, :, ::-1] / 255., (new_w, new_h), cv2.INTER_LANCZOS4)
+
+        # embed the image into the standard letter box
+        new_image = np.ones((net_h, net_w, 3)) * 0.5
+        new_image[(net_h - new_h) // 2:(net_h + new_h) // 2, (net_w - new_w) // 2:(net_w + new_w) // 2, :] = resized
+        preprocessed_images[i] = new_image
+
+    return preprocessed_images
 
 
 def normalize(image):
@@ -261,6 +295,31 @@ def get_yolo_boxes(model, image, net_h, net_w, anchors, obj_thresh, nms_thresh):
     do_nms(boxes, nms_thresh)
 
     return boxes
+
+
+def get_yolo_boxes_batch(model, images, net_h, net_w, anchors, obj_thresh, nms_thresh):
+    # preprocess the input
+    new_images = preprocess_input_batch(images, net_h, net_w)
+
+    # run the prediction
+    yolos = model.predict(new_images)
+
+    batch_boxes = []
+    for batch_i in range(len(images)):
+        boxes = []
+        image_h, image_w, _ = images[batch_i].shape
+
+        for i in range(len(yolos)):
+            # decode the output of the network
+            yolo_anchors = anchors[(2 - i) * 6:(3 - i) * 6]  # config['model']['anchors']
+            boxes += decode_netout(yolos[i][batch_i], yolo_anchors, obj_thresh, net_h, net_w)
+
+        boxes = correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
+        do_nms(boxes, nms_thresh)
+
+        batch_boxes.append(boxes)
+
+    return batch_boxes
 
 
 def compute_overlap(a, b):

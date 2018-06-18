@@ -1,382 +1,780 @@
 {
-    "model" :
-    {
-        "min_input_size":       352,
-        "max_input_size":       608,
-        "anchors":              [10,37, 17,71, 28,104, 28,50, 42,79, 45,148, 70,92, 77,181, 193,310],
-        "max_box_per_image":    50,
-        "labels":               ["person"]
-    },
+  "model": {
+    "min_input_size": 416,
+    "max_input_size": 800,
+    "anchors": [10,37, 17,71, 28,104, 28,50, 42,79, 45,148, 70,92, 77,181, 193,310],
+    "max_box_per_image": 500,
+    "model_scale_coefficient": 1.0,
+    "labels": [
+      "head"
+    ]
+  },
+  "train": {
+    "images_dir": "/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/peoples/",
+    "train_datasets": [
+      {
+        "path": "crowd_human/CrowdHuman_train/Images",
+        "images_count": "all",
+        "only_verified": false,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
 
-    "train":
-    {
-        "images_dir":           "/media/oem/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/peoples/",
-        "datasets_to_train":
-        [
-          {
-            "path": "coco/2017/train2017",
-            "count_to_process": "10000",
-            "only_verified": false,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "contract_back_0",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "contract_back_1",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "contract_back_2",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "contract_back_3",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "contract_back_4",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "corridor_1",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "corridor_2",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "corridor_3",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "entrance",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "hr",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "kitchen",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "maidan",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "militari",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "prw",
-            "count_to_process": "100",
-            "only_verified": false,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "queue_dataset",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "rzd_0",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "rzd_1",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "rzd_5",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "rzd_many_peoples_0",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "rzd_many_peoples_1",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "shop_5",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "shop_scene_0",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "shop_scene_1",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "top_queue_1",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "top_queue_2",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "top_queue_3",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "top_queue_4",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "weed",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Видеостудия",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Гардероб холл (6 этаж)",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Качалка",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Коридор",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Коридор 1",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Коридор 2",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Коридор 3",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Коридор 4",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Коридор вход",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Коридор переговорки",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Кухня (5 этаж)",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Кухня (6 этаж)",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Логистика",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Отдел кадров",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Отдел маркетинга",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Отдел продаж 1 Полухин, Гламазда",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "Отдел продаж 2",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          }
-        ],
-        "datasets_to_validate":
-        [
-          {
-            "path": "validation_big",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "validation_different",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "validation_queue_roma",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          },
-          {
-            "path": "validation_queue_ai",
-            "count_to_process": "all",
-            "only_verified": true,
-            "max_bbox_area": 1.0,
-            "min_bbox_area": 0.0005
-          }
-        ],
+      {
+        "path": "chinese_plant",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "contrast_back_0",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "contrast_back_1",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "contrast_back_2",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "contrast_back_3",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "contrast_back_4",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "corridor_1",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "corridor_2",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "corridor_3",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "entrance",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "hr",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "kitchen",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "maidan",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "militari",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "office_negatives",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "queue_dataset",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "rzd_0",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "rzd_1",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "rzd_5",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_2",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_3",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_4",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_5",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_0",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_1",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_2",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_3",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_4",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_5",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_6",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_7",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_8",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_9",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_10",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_11",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_12",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_13",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_14",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_15",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_16",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_17",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_18",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_19",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_20",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_21",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_22",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_23",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_24",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_25",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_26",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_27",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_28",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_29",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_30",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_31",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_32",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "shop_scene_33",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "top_queue_0",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "top_queue_1",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "top_queue_2",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "top_queue_4",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "top_queue_5",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "top_queue_6",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "weed",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Видеостудия",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Гардероб холл (6 этаж)",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Запасной выход",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Качалка",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Коридор",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Коридор 1",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Коридор 2",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Коридор 3",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Коридор 4",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Коридор вход",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Коридор переговорки",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Кухня (5 этаж)",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Кухня (6 этаж)",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Логистика",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Отдел кадров",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Отдел маркетинга",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Отдел продаж 1 Полухин, Гламазда",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Отдел продаж 2",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Отдел продаж 3, Щербаков",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Отдел продаж 4",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Отдел развития",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Переговорная Scrum",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Переговорная Киев",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Переговорная Краснодар",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Переговорная Н.Новгород",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Переговорная Питер",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Программисты A1",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Программисты mobile",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Программисты MSK1",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Программисты MSK2",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Программисты MSK3",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Программисты MSK4",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Программисты MSK4, Лоозе",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Программисты MSK5, Волков",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Программисты граббера",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Программисты граббера, Садовский",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Ресепшн левая",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Ресепшн правая",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Сисадмины",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Тестеры",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Тестеры, Курдюмов",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Тех поддержка 1, Шварцкопф",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Тех поддержка 2, Агафонов",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Тёмная комната (5 этаж)",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Тёмная комната (6 этаж)",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Холл WC",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Холл лв.",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Холл пр.",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Щитовая",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Эксперты 1",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Эксперты 2",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Эксперты 3",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "Эксперты 4, Будков",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      }
+    ],
+    "validation_datasets": [
+      {
+        "path": "crowd_human/CrowdHuman_val/Images",
+        "images_count": 128,
+        "only_verified": false,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
 
-        "train_times":          1,
-        "pretrained_weights":   "./snapshots/best_weights.h5",
-        "batch_size":           6,
-        "learning_rate":        1e-4,
-        "nb_epochs":            50,
-        "warmup_epochs":        3,
-        "ignore_thresh":        0.5,
-
-        "saved_weights_name":   "./snapshots/",
-        "debug":                true
+      {
+        "path": "validation_big",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "validation_different",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "validation_queue_roma",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      },
+      {
+        "path": "validation_queue_sasha",
+        "images_count": 0,
+        "only_verified": true,
+        "bbox_limits": [4, 4, "inf", "inf"]
+      }
+    ],
+    "train_times": 1,
+    "batch_size": 2,
+    "learning_rate": 1e-4,
+    "nb_epochs": 150,
+    "warmup_epochs": 3,
+    "ignore_thresh": 0.5,
+    "gpus": "0",
+    "verifiers": ["sergey_head"],
+    "log_prefix": "head",
+    "snapshots_path": "./snapshots_heads_yolo3_crowddataset/",
+    "debug": true
+  },
+  "loss_config": {
+    "debug_loss": false,
+    "yolo_loss": {
+      "grid_scales": [1, 1, 1],
+      "obj_scale": 8,
+      "noobj_scale": 1,
+      "xywh_scale": 1,
+      "class_scale": 1
     }
+  }
 }

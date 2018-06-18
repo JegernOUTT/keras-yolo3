@@ -1,146 +1,298 @@
 import json
 import os
 import pickle
-from copy import deepcopy
-
+import logging
+import random
 import numpy as np
 
+from copy import deepcopy
+from tqdm import tqdm
 
-def load_images(config, skip_empty=True):
-    images_dir = config['train']['images_dir']
 
-    train_last_image_index = 0
-    train_data = {
-        'images_with_annotations': [],
-        'categories': []
-    }
+class TrassirAnnotations:
+    ANNOTATION_VERSION = '1.1'
+    ANNOTATIONS_FILENAMES = [('annotations.pickle', pickle), ('annotations.json', json)]
+    ANNOTATION_TYPE = 'RectShape'
 
-    # Train dataset loading
-    for dataset in config['train']['datasets_to_train']:
-        current_path = os.path.join(images_dir, dataset['path'])
+    def __init__(self, train_folders, validation_folders):
+        self._train_folders = train_folders
+        self._validation_folders = validation_folders
 
-        if not skip_empty and not (os.path.isfile(os.path.join(current_path, 'annotations.pickle')) or
-                                   os.path.isfile(os.path.join(current_path, 'annotations.json'))):
-            assert False, "Error path: {}".format(os.path.join(current_path, 'annotations.pickle'))
+        self._common_image_id = 0
+        self._train_index = None
+        self._validation_index = None
+        self._categories = None
+        self._verifiers = None
 
-        if os.path.isfile(os.path.join(current_path, 'annotations.pickle')):
-            with open(os.path.join(current_path, 'annotations.pickle'), 'rb') as f:
-                annotations = pickle.load(f)
-        elif os.path.isfile(os.path.join(current_path, 'annotations.json')):
-            with open(os.path.join(current_path, 'annotations.pickle'), 'rb') as f:
-                annotations = json.load(f)
+        # Extra indexes
+        self._images_by_id_index = None
+        self._categories_by_id_index = None
+        self._categories_by_name_index = None
 
-        assert annotations
+    def load(self):
+        logging.info('Starting folders loading')
+        self._load_all_folders()
+        logging.info('All folders was loaded. Starting categories loading')
+        self._retrieve_categories()
+        logging.info('Categories was loaded. Retrieving verifiers')
+        self._retrieve_verifiers()
+        logging.info('Loading of annotations competed. Building indexes')
+        self._build_extra_indexes()
 
-        if dataset['only_verified']:
-            annotations['images'] = [image for image in annotations['images']
-                                     if any(map(lambda x: x, image['verified'].values()))]
+    def print_statistics(self):
+        if self._images_by_id_index is None or self._categories_by_id_index is None \
+                or self._categories_by_name_index is None:
+            logging.error('Before statistic retrieving you must to build index')
+            return
 
-        for image in annotations['images']:
-            image['file_name'] = os.path.join(images_dir, dataset['path'], image['file_name'])
+        print('In training set {} images'.format(len(self._train_index)))
+        print('In validation set {} images'.format(len(self._validation_index)))
 
-        if dataset['count_to_process'] != "all":
-            np.random.shuffle(annotations['images'])
-            annotations['images'] = annotations['images'][:int(dataset['count_to_process'])]
+        common_index = self._train_index + self._validation_index
 
-        if len(train_data['categories']) == 0:
-            train_data['categories'] = annotations['categories']
-        elif len(annotations['categories']) == 0:
-            pass
+        print('\nCategories:')
+        for category in self._categories:
+            print('[{}]: {}'.format(category['id'], category['name']))
+        print('\nVerifiers:')
+        for verifier, ids in self._verifiers.items():
+            print('{}: {} images verified'.format(verifier, len(ids)))
+
+        print('\nDetailed categories statistic:')
+        categories_statistic = {c['id']: 0 for c in self._categories}
+        for image in common_index:
+            for ann in image['annotations']:
+                categories_statistic[ann['category_id']] += 1
+        for i, count in categories_statistic.items():
+            print('[{}]: {} annotations'.format(self._categories_by_id_index[i]['name'], count))
+
+    def get_train_instances(self, categories, verifiers, max_bbox_per_image, shuffle=True):
+        final_images = []
+        for folder in self._train_folders.values():
+            images = folder['images']
+            images = self._filter_by_image_availability(images)
+            if folder['only_verified']:
+                images = self._filter_by_verifiers(verifiers if verifiers != 'any' else None, images)
+            if folder['images_count'] != "all":
+                random.shuffle(images)
+                images = images[:folder['images_count']]
+
+            for image in images:
+                annotations = image['annotations']
+                annotations = self._filter_by_categories(categories, annotations)
+                annotations = self._filter_by_bbox_size(folder['bbox_limits'], (image['width'], image['height']),
+                                                        annotations)
+                annotations = self._filter_by_annotations_count(max_bbox_per_image, annotations)
+                image['annotations'] = annotations
+                final_images.append(image)
+        if shuffle:
+            random.shuffle(final_images)
+        return final_images
+
+    def get_validation_instances(self, categories, verifiers, max_bbox_per_image, shuffle=False):
+        final_images = []
+        for folder in self._validation_folders.values():
+            images = folder['images']
+            images = self._filter_by_image_availability(images)
+            if folder['only_verified']:
+                images = self._filter_by_verifiers(verifiers if verifiers != 'any' else None, images)
+            if folder['images_count'] != "all":
+                random.shuffle(images)
+                images = images[:folder['images_count']]
+
+            for image in images:
+                annotations = image['annotations']
+                annotations = self._filter_by_categories(categories, annotations)
+                annotations = self._filter_by_bbox_size(folder['bbox_limits'], (image['width'], image['height']),
+                                                        annotations)
+                annotations = self._filter_by_annotations_count(max_bbox_per_image, annotations)
+                image['annotations'] = annotations
+                final_images.append(image)
+        if shuffle:
+            random.shuffle(final_images)
+        return final_images
+
+    # Internals #
+    def _load_all_folders(self):
+        self._train_index, train_folders = [], {}
+        for folder in tqdm(self._train_folders, desc='Loading training folders', leave=False, miniters=1):
+            images_index = self._load_folder(folder['path'])
+            if images_index is not None:
+                self._train_index.extend(images_index)
+                train_folders[folder['path']] = {'images': images_index, **folder}
+        self._train_folders = train_folders
+
+        self._validation_index, validation_folders = [], {}
+        for folder in tqdm(self._validation_folders, desc='Loading validation folders', leave=False, miniters=1):
+            images_index = self._load_folder(folder['path'])
+            if images_index is not None:
+                self._validation_index.extend(images_index)
+                validation_folders[folder['path']] = {'images': images_index, **folder}
+
+        self._validation_folders = validation_folders
+
+    def _retrieve_categories(self):
+        self._categories = []
+        existing_categories_names = set()
+        categories_id_by_name = {}
+
+        common_index = self._train_index + self._validation_index
+        for image in common_index:
+            for ann in image['annotations']:
+                if ann['category_name'] in existing_categories_names:
+                    ann['category_id'] = categories_id_by_name[ann['category_name']]
+                else:
+                    next_id = max(list(categories_id_by_name.values())) + 1 if len(categories_id_by_name) > 0 else 0
+                    existing_categories_names.add(ann['category_name'])
+                    categories_id_by_name[ann['category_name']] = next_id
+                    self._categories.append({'id': next_id, 'name': ann['category_name']})
+                    ann['category_id'] = categories_id_by_name[ann['category_name']]
+
+    def _retrieve_verifiers(self):
+        self._verifiers = {}
+
+        common_index = self._train_index + self._validation_index
+        for image in common_index:
+            for verifier_name, verified in image['verified'].items():
+                if verifier_name in self._verifiers and verified:
+                    self._verifiers[verifier_name].append(image['id'])
+                elif verifier_name not in self._verifiers:
+                    if not verified:
+                        self._verifiers[verifier_name] = []
+                    else:
+                        self._verifiers[verifier_name] = [image['id']]
+
+    def _build_extra_indexes(self):
+        common_index = self._train_index + self._validation_index
+        self._images_by_id_index = {image['id']: image for image in common_index}
+        self._categories_by_id_index = {cat['id']: cat for cat in self._categories}
+        self._categories_by_name_index = {cat['name']: cat for cat in self._categories}
+
+    @staticmethod
+    def _annotation_converter(annotation):
+        annotation = deepcopy(annotation)
+        assert annotation['shape_type'] == TrassirAnnotations.ANNOTATION_TYPE
+        del annotation['shape_type']
+        del annotation['time_code']
+        annotation['bbox'] = np.array(annotation['bbox'], dtype=np.float32)
+        return annotation
+
+    def _load_folder(self, path):
+        if not os.path.exists(path):
+            logging.error('Given path with annotations is not exist, skipping it: {}'.format(path))
+            return None
+
+        if all([not os.path.isfile(os.path.join(path, ann_filename))
+                for ann_filename, _ in TrassirAnnotations.ANNOTATIONS_FILENAMES]):
+            logging.error('There is no annotation file in given path: {}'.format(path))
+            return None
+
+        annotations = None
+        for ann_filename, module in TrassirAnnotations.ANNOTATIONS_FILENAMES:
+            if os.path.isfile(os.path.join(path, ann_filename)):
+                with open(os.path.join(path, ann_filename), 'rb') as f:
+                    annotations = module.load(f)
+                break
+        assert annotations is not None
+
+        if not all(key in annotations for key in ['info', 'images', 'annotations', 'categories']):
+            logging.error('Annotation file structure is invalid: {}'.format(path))
+            return None
+
+        if annotations['info']['version'] != TrassirAnnotations.ANNOTATION_VERSION:
+            logging.error('Annotation versions mismatch for {}: {} is required, {} is given'.format(
+                path, TrassirAnnotations.ANNOTATION_VERSION, annotations['info']['version']))
+            return None
+
+        images_by_id = {image_info['id']: {**image_info,
+                                           'annotations': [],
+                                           'file_name': os.path.join(path, image_info['file_name'])}
+                        for image_info in annotations['images']}
+        categories_by_id = {cat_info['id']: cat_info for cat_info in annotations['categories']}
+
+        for ann in filter(lambda x: x['shape_type'] == TrassirAnnotations.ANNOTATION_TYPE, annotations['annotations']):
+            ann = self._annotation_converter(ann)
+            ann['category_name'] = categories_by_id[ann['category_id']]['name']
+            del ann['category_id']
+            images_by_id[ann['image_id']]['annotations'].append(ann)
+
+        for image in images_by_id.values():
+            image['id'] = self._common_image_id
+            self._common_image_id += 1
+
+        return list(images_by_id.values())
+
+    # Images filters #
+    @staticmethod
+    def _filter_by_image_availability(images):
+        return [image_info
+                for image_info in images
+                if os.path.isfile(image_info['file_name'])]
+
+    # If verifiers is None then we search for any verify signature
+    def _filter_by_verifiers(self, verifiers, images):
+        filtered_images_ids = set()
+        if verifiers is None:
+            for verifier in self._verifiers.keys():
+                filtered_images_ids.update(self._verifiers[verifier])
+        elif type(verifiers) is str:
+            verifiers = [verifiers]
+            for verifier in verifiers:
+                if verifier in self._verifiers:
+                    filtered_images_ids.update(self._verifiers[verifier])
+        elif type(verifiers) is list:
+            for verifier in verifiers:
+                if verifier in self._verifiers:
+                    filtered_images_ids.update(self._verifiers[verifier])
         else:
-            current_categories = set(map(lambda x: (x['id'], x['name']), annotations['categories']))
-            for category in train_data['categories']:
-                cat = (category['id'], category['name'])
-                assert cat in current_categories, 'Categories ids must be same in all datasets'
+            assert False, "verifiers has invalid format in _filter_by_verifiers"
 
-        image_id_to_image = {image['id']: image for image in annotations['images']}
-        images_with_annotations = {image['id']: [] for image in annotations['images']}
-        for annotation in annotations['annotations']:
-            if annotation['image_id'] not in image_id_to_image:
-                continue
-            image = image_id_to_image[annotation['image_id']]
-            image_area = image['width'] * image['height']
-            bbox_area = (annotation['bbox'][1][0] * image['width'] - annotation['bbox'][0][0] * image['width']) * \
-                        (annotation['bbox'][1][1] * image['height'] - annotation['bbox'][0][1] * image['height'])
-            area_ratio = bbox_area / image_area
+        return [
+            image
+            for image in images
+            if image['id'] in filtered_images_ids
+        ]
 
-            if area_ratio < dataset['min_bbox_area'] or area_ratio > dataset['max_bbox_area']:
-                continue
+    # Annotations filters #
+    # Categories - list of categories names
+    @staticmethod
+    def _filter_by_categories(categories, annotations):
+        return [ann for ann in annotations if ann['category_name'] in categories]
 
-            images_with_annotations[annotation['image_id']].append(annotation)
+    # bbox_size is tuple with all border min and max sizes, sizes is pixel count for given image_size
+    @staticmethod
+    def _filter_by_bbox_size(bbox_size, image_size, annotations):
+        annotations = deepcopy(annotations)
+        bbox_size = list(map(lambda x: np.iinfo(np.int32).max if x == 'inf' else x, bbox_size))
+        min_w, min_h, max_w, max_h = bbox_size
+        w, h = image_size
 
-        for image_id, anns in images_with_annotations.items():
-            image, anns = deepcopy(image_id_to_image[image_id]), deepcopy(anns)
-            image['id'] = train_last_image_index
-            for annotation in anns:
-                annotation['image_id'] = train_last_image_index
-            train_data['images_with_annotations'].append((image, anns))
-            train_last_image_index += 1
+        bboxes_by_ids = [
+            (ann['id'],
+             [int(round(ann['bbox'][0][0] * w)), int(round(ann['bbox'][0][1] * h)),
+              int(round(ann['bbox'][1][0] * w)), int(round(ann['bbox'][1][1] * h))])
+            for ann in annotations
+        ]
 
-    val_last_image_index = 0
-    validation_data = {
-        'images_with_annotations': [],
-        'categories': []
-    }
+        filtered_bboxes_ids = set([
+            i
+            for i, bbox in bboxes_by_ids
+            if (min_w <= bbox[2] - bbox[0] <= max_w) and
+               (min_h <= bbox[3] - bbox[1] <= max_h)
+            ])
 
-    # Validation dataset loading
-    for dataset in config['train']['datasets_to_validate']:
-        current_path = os.path.join(images_dir, dataset['path'])
-        if not skip_empty and not (os.path.isfile(os.path.join(current_path, 'annotations.pickle')) or
-                                   os.path.isfile(os.path.join(current_path, 'annotations.json'))):
-            assert False, "Error path: {}".format(os.path.join(current_path, 'annotations.pickle'))
+        return [ann for ann in annotations if ann['id'] in filtered_bboxes_ids]
 
-        if os.path.isfile(os.path.join(current_path, 'annotations.pickle')):
-            with open(os.path.join(current_path, 'annotations.pickle'), 'rb') as f:
-                annotations = pickle.load(f)
-        elif os.path.isfile(os.path.join(current_path, 'annotations.json')):
-            with open(os.path.join(current_path, 'annotations.pickle'), 'rb') as f:
-                annotations = json.load(f)
+    # We will try to filter smallest boxes if there is too many annotations
+    @staticmethod
+    def _filter_by_annotations_count(max_count, annotations):
+        if len(annotations) < max_count:
+            return annotations
 
-        assert annotations
+        annotations_with_areas = [
+            (ann, (ann['bbox'][1][0] - ann['bbox'][0][0]) * (ann['bbox'][1][1] - ann['bbox'][0][1]))
+            for ann in annotations
+        ]
 
-        if dataset['only_verified']:
-            annotations['images'] = [image for image in annotations['images']
-                                     if any(map(lambda x: x, image['verified'].values()))]
+        annotations_with_areas = sorted(annotations_with_areas, reverse=True, key=lambda x: x[1])
 
-        for image in annotations['images']:
-            image['file_name'] = os.path.join(images_dir, dataset['path'], image['file_name'])
-
-        if dataset['count_to_process'] != "all":
-            np.random.shuffle(annotations['images'])
-            annotations['images'] = annotations['images'][:int(dataset['count_to_process'])]
-
-        if len(validation_data['categories']) == 0:
-            validation_data['categories'] = annotations['categories']
-        elif len(annotations['categories']) == 0:
-            pass
-        else:
-            current_categories = set(map(lambda x: (x['id'], x['name']), annotations['categories']))
-            for category in train_data['categories']:
-                cat = (category['id'], category['name'])
-                assert cat in current_categories, 'Categories ids must be same in all datasets'
-
-        image_id_to_image = {image['id']: image for image in annotations['images']}
-        images_with_annotations = {image['id']: [] for image in annotations['images']}
-        for annotation in annotations['annotations']:
-            if annotation['image_id'] not in image_id_to_image:
-                continue
-            image = image_id_to_image[annotation['image_id']]
-            image_area = image['width'] * image['height']
-            bbox_area = (annotation['bbox'][1][0] * image['width'] - annotation['bbox'][0][0] * image['width']) * \
-                        (annotation['bbox'][1][1] * image['height'] - annotation['bbox'][0][1] * image['height'])
-
-            if dataset['min_bbox_area'] > bbox_area / image_area > dataset['max_bbox_area']:
-                continue
-
-            images_with_annotations[annotation['image_id']].append(annotation)
-
-        for image_id, anns in images_with_annotations.items():
-            image, anns = deepcopy(image_id_to_image[image_id]), deepcopy(anns)
-            image['id'] = val_last_image_index
-            for annotation in anns:
-                annotation['image_id'] = val_last_image_index
-            validation_data['images_with_annotations'].append((image, anns))
-            val_last_image_index += 1
-
-    return train_data, validation_data
+        return [ann for ann, _ in annotations_with_areas[:max_count]]

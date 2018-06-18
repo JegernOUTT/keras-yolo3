@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import cv2
+from PIL import ImageDraw, Image
 
 
 class BoundBox:
@@ -56,10 +57,13 @@ def bbox_iou(box1, box2):
 
     union = w1 * h1 + w2 * h2 - intersect
 
-    return float(intersect) / float(union)
+    return float(intersect) / max(float(union), 0.00000001)
 
 
 def draw_boxes(image, boxes, labels, obj_thresh):
+    image = Image.fromarray(image)
+    draw = ImageDraw.Draw(image, "RGBA")
+
     for box in boxes:
         label_str = ''
         label = -1
@@ -68,15 +72,18 @@ def draw_boxes(image, boxes, labels, obj_thresh):
             if box.classes[i] > obj_thresh:
                 label_str += labels[i]
                 label = i
-                print(labels[i] + ': ' + str(box.classes[i] * 100) + '%')
+                # print(labels[i] + ': ' + str(box.classes[i] * 100) + '%')
 
         if label >= 0:
-            cv2.rectangle(image, (box.xmin, box.ymin), (box.xmax, box.ymax), (0, 255, 0), 3)
-            cv2.putText(image,
-                        label_str + ' ' + str(box.get_score()),
-                        (box.xmin, box.ymin - 13),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        1e-3 * image.shape[0],
-                        (0, 255, 0), 2)
+            if label == 1:
+                fill_color = (255, 0, 255, 30)
+            elif label == 0:
+                fill_color = (255, 255, 255, 30)
+            else:
+                fill_color = (255, 0, 255, 30)
 
-    return image
+            draw.rectangle([box.xmin, box.ymin, box.xmax, box.ymax],
+                           fill=fill_color,
+                           outline=(255, 255, 255, 255))
+
+    return np.array(image.convert('RGB'))

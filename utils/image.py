@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import copy
 
+import keras.backend as K
+
 
 def _rand_scale(scale):
     scale = np.random.uniform(1, scale)
@@ -57,7 +59,7 @@ def random_distort_image(image, hue=18, saturation=1.5, exposure=1.5):
     dexp = _rand_scale(exposure)
 
     # convert RGB space to HSV space
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV).astype('float')
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV).astype(K.floatx())
 
     # change satuation and exposure
     image[:, :, 1] *= dsat
@@ -73,12 +75,10 @@ def random_distort_image(image, hue=18, saturation=1.5, exposure=1.5):
 
 
 def apply_random_scale_and_crop(image, new_w, new_h, net_w, net_h, dx, dy):
-    im_sized = cv2.resize(image, (new_w, new_h))
-
     if dx > 0:
-        im_sized = np.pad(im_sized, ((0, 0), (dx, 0), (0, 0)), mode='constant', constant_values=127)
+        im_sized = np.pad(image, ((0, 0), (dx, 0), (0, 0)), mode='constant', constant_values=127)
     else:
-        im_sized = im_sized[:, -dx:, :]
+        im_sized = image[:, -dx:, :]
     if (new_w + dx) < net_w:
         im_sized = np.pad(im_sized, ((0, 0), (0, net_w - (new_w + dx)), (0, 0)), mode='constant', constant_values=127)
 
