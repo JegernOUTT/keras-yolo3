@@ -155,8 +155,13 @@ fabric.properties
 
 # NN models and weights
 *.h5
+*.hdf5
+*.pb
 *.weights
 *snapshot*
+
+# There must be only one config for example
+config_*.json
 
 # Pictures
 *.jpg

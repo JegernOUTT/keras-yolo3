@@ -13,7 +13,7 @@ from keras.models import load_model
 from tqdm import tqdm
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # define the GPU to work on here
+os.environ["CUDA_VISIBLE_DEVICES"] = ""  # define the GPU to work on here
 
 
 def _main_(args):
@@ -28,24 +28,14 @@ def _main_(args):
     ###############################
     #   Set some parameter
     ###############################
-    net_h, net_w = 416, 416
-    obj_thresh, nms_thresh = 0.8, 0.4
+    net_h, net_w = 608, 608
+    obj_thresh, nms_thresh = 0.8, 0.3
 
     ###############################
     #   Load the model
     ###############################
-    # infer_model = load_model('./snapshots/yolo3.h5')
-    # infer_model = load_model('./snapshots_persons_yolo3_dilations/yolo3_model.h5')
-    # infer_model = load_model('./heads_snapshots/yolo3.h5')
-    # infer_model = load_model('./snapshots_heads_yolo3_original/yolo3_model.h5')
-    # infer_model = load_model('./snapshots_persons_yolo3_original/yolo3_model.h5')
-    # infer_model = load_model('./snapshots_test/yolo3_model.h5')
-    # infer_model = load_model('./snapshots_persons_float16/yolo3_model.h5')
-    # infer_model = load_model('./snapshots_persons_yolo3_crowddataset/yolo3_model.h5')
-    # infer_model = load_model('./snapshots_heads_yolo3_crowddataset/yolo3_model.h5')
-    # infer_model = load_model('./snapshots_mobilenet/yolo3_model.h5', {'relu6': mobilenet.relu6})
-    # infer_model = load_model('./snapshots_person_heads/yolo3_model.h5')
-    infer_model = load_model('./snapshots_person_final/yolo3_model.h5')
+    infer_model = load_model('./snapshots/person_trassir/yolo3_model.h5')
+    # infer_model = load_model('./snapshots/carface/yolo3_model.h5')
 
     ###############################
     #   Predict bounding boxes
@@ -62,7 +52,7 @@ def _main_(args):
     # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/test/DP-kass-5ka/DS-2CD2542FWD-IS 3_20180419-180000--20180419-190000-2.avi'
     # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/test/DP-kass-5ka/DS-2CD2542FWD-IS 3_20180419-180000--20180419-190000-3.avi'
     # input_path = 'rtsp://admin:hik12345@172.16.16.34/Streaming/Channels/1'
-    input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/Downloads/1.mp4'
+    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/Downloads/1.mp4'
     # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/Downloads/2.mp4'
     # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/Downloads/3.mp4'
     # input_path = 'rtsp://172.17.17.54:555/qRbD2KXT_m/'
@@ -70,8 +60,14 @@ def _main_(args):
     # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/очереди/кассы 8-9_20171110-192101--20171110-192601.avi'
     # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/TR-D2123IR3v2 4_20180604-090709--20180604-091328.avi'
     # input_path = 'rtsp://192.168.0.35:555/S1uxjhff_m/'
-    input_path = 'rtsp://192.168.0.35:555/VmSjBQbX_m/'
+    # input_path = 'rtsp://192.168.0.35:555/VmSjBQbX_m/'
     # input_path = 'rtsp://172.20.25.144:555/FOJuplwr_m/'
+    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/Румыны/2018-06-07_063105.avi'
+    # input_path = '/mnt/nfs/Data/LPR/new_video/ro/ro500.avi'
+    # input_path = '/mnt/nfs/Data/LPR/new_video/kz/new_yellow/drive-download-20180528T085002Z-001.avi'
+    input_path = '/home/svakhreev/workspace/t4/chroots/trassir_gentoo/sys/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/305214949504/ArabesqueTimisoara-7.avi'
+    input_path = '/home/svakhreev/workspace/t4/chroots/trassir_gentoo/sys/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/305214949504/ArabesqueTimisoara-5.avi'
+    input_path = '/home/svakhreev/workspace/t4/chroots/trassir_gentoo/sys/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/305214949504/ArabesqueTimisoara-14.avi'
 
     # do detection on a video
     video_reader = cv2.VideoCapture(input_path)
@@ -82,7 +78,7 @@ def _main_(args):
     #                                cv2.VideoWriter_fourcc(*'MPEG'),
     #                                50.0,
     #                                (frame_w, frame_h))
-    every_nth = 20
+    every_nth = 10
 
     for i in tqdm(range(100000)):
         # Run online profiling with 'op' view and 'opts' options at step 15, 18, 20.

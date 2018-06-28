@@ -1,7 +1,8 @@
 import numpy as np
 import os
 import cv2
-from PIL import ImageDraw, Image
+from PIL import ImageDraw, Image, ImageFont
+from PIL.ImageDraw2 import Font
 
 
 class BoundBox:
@@ -75,13 +76,9 @@ def draw_boxes(image, boxes, labels, obj_thresh):
                 # print(labels[i] + ': ' + str(box.classes[i] * 100) + '%')
 
         if label >= 0:
-            if label == 1:
-                fill_color = (255, 0, 255, 30)
-            elif label == 0:
-                fill_color = (255, 255, 255, 30)
-            else:
-                fill_color = (255, 0, 255, 30)
+            fill_color = (255, 255, 255, 30)
 
+            draw.text((box.xmin + 5, box.ymin + 5), label_str)
             draw.rectangle([box.xmin, box.ymin, box.xmax, box.ymax],
                            fill=fill_color,
                            outline=(255, 255, 255, 255))

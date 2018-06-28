@@ -1,5 +1,7 @@
 import datetime
 import math
+from copy import deepcopy
+
 import tqdm
 
 import cv2
@@ -142,6 +144,7 @@ def correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w):
     valid_boxes = []
     is_valid = lambda x: math.isfinite(x) and not math.isnan(x)
     for box in boxes:
+        box = deepcopy(box)
         if not is_valid(box.xmin) or not is_valid(box.xmax) or not is_valid(box.ymin) or not is_valid(box.ymax):
             continue
         box.xmin = box.xmin if box.xmin > 0 else 0

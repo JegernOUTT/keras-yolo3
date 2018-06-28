@@ -203,7 +203,93 @@ class YoloLayer(Layer):
         return [(None, 1)]
 
 
-def _conv_block(inp, coef, convs, do_skip=True):
+def __grouped_convolution_block(input, grouped_channels, cardinality, strides, weight_decay=5e-4):
+    ''' Adds a grouped convolution block. It is an equivalent block from the paper
+    Args:
+        input: input tensor
+        grouped_channels: grouped number of filters
+        cardinality: cardinality factor describing the number of groups
+        strides: performs strided convolution for downscaling if > 1
+        weight_decay: weight decay term
+    Returns: a keras tensor
+    '''
+    init = input
+    channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
+
+    group_list = []
+
+    if cardinality == 1:
+        # with cardinality 1, it is a standard convolution
+        x = Conv2D(grouped_channels, (3, 3), padding='same', use_bias=False, strides=(strides, strides),
+                   kernel_initializer='he_normal', kernel_regularizer=l2(weight_decay))(init)
+        x = BatchNormalization(axis=channel_axis)(x)
+        x = LeakyReLU(alpha=0.1)(x)
+        return x
+
+    for c in range(cardinality):
+        x = Lambda(lambda z: z[:, :, :, c * grouped_channels:(c + 1) * grouped_channels]
+        if K.image_data_format() == 'channels_last' else
+        lambda z: z[:, c * grouped_channels:(c + 1) * grouped_channels, :, :])(input)
+
+        x = Conv2D(grouped_channels, (3, 3), padding='same', use_bias=False, strides=(strides, strides),
+                   kernel_initializer='he_normal', kernel_regularizer=l2(weight_decay))(x)
+
+        group_list.append(x)
+
+    group_merge = concatenate(group_list, axis=channel_axis)
+    x = BatchNormalization(axis=channel_axis)(group_merge)
+    x = LeakyReLU(alpha=0.1)(x)
+
+    return x
+
+
+def __bottleneck_block(input, filters=64, cardinality=8, strides=1, weight_decay=5e-4):
+    ''' Adds a bottleneck block
+    Args:
+        input: input tensor
+        filters: number of output filters
+        cardinality: cardinality factor described number of
+            grouped convolutions
+        strides: performs strided convolution for downsampling if > 1
+        weight_decay: weight decay factor
+    Returns: a keras tensor
+    '''
+    init = input
+
+    grouped_channels = int(filters / cardinality)
+    channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
+
+    # Check if input number of filters is same as 16 * k, else create convolution2d for this input
+    if K.image_data_format() == 'channels_first':
+        if init._keras_shape[1] != 2 * filters:
+            init = Conv2D(filters * 2, (1, 1), padding='valid' if strides > 1 else 'same', strides=(strides, strides),
+                          use_bias=False, kernel_initializer='he_normal', kernel_regularizer=l2(weight_decay))(init)
+            init = BatchNormalization(axis=channel_axis)(init)
+    else:
+        if init._keras_shape[-1] != 2 * filters:
+            init = Conv2D(filters * 2, (1, 1), padding='valid' if strides > 1 else 'same', strides=(strides, strides),
+                          use_bias=False, kernel_initializer='he_normal', kernel_regularizer=l2(weight_decay))(init)
+            init = BatchNormalization(axis=channel_axis)(init)
+
+    x = Conv2D(filters, (1, 1), padding='valid' if strides > 1 else 'same', use_bias=False,
+               kernel_initializer='he_normal', kernel_regularizer=l2(weight_decay))(input)
+    x = BatchNormalization(axis=channel_axis)(x)
+    x = LeakyReLU(alpha=0.1)(x)
+
+    x = __grouped_convolution_block(x, grouped_channels, cardinality, strides, weight_decay)
+
+    x = Conv2D(filters * 2, (1, 1), padding='valid' if strides > 1 else 'same', use_bias=False,
+               kernel_initializer='he_normal',
+               kernel_regularizer=l2(weight_decay))(x)
+    x = BatchNormalization(axis=channel_axis)(x)
+
+    x = add([init, x])
+    x = LeakyReLU(alpha=0.1)(x)
+
+    return x
+
+
+def _conv_block(inp, coef, convs, resnext=False, do_skip=True):
     x = inp
     count = 0
 
@@ -214,19 +300,27 @@ def _conv_block(inp, coef, convs, do_skip=True):
 
         if conv['stride'] > 1:
             x = ZeroPadding2D(((1, 0), (1, 0)))(x)
-        x = Conv2D(int(conv['filter'] * coef) if not 'no_scale' in conv else conv['filter'],
-                   conv['kernel'],
-                   strides=conv['stride'],
-                   padding='valid' if conv['stride'] > 1 else 'same',
-                   name='conv_' + str(conv['layer_idx']),
-                   use_bias=False if conv['bnorm'] else True,
-                   kernel_initializer='glorot_uniform',
-                   bias_initializer='glorot_uniform'
-                   )(x)
-        if conv['bnorm']:
-            x = BatchNormalization(epsilon=0.001, name='bnorm_' + str(conv['layer_idx']))(x)
-        if conv['leaky']:
-            x = LeakyReLU(alpha=0.1, name='leaky_' + str(conv['layer_idx']))(x)
+
+        if resnext:
+            # Now work only with strides == 1 #
+            assert conv['stride'] == 1
+            x = __bottleneck_block(input=x,
+                                   filters=int(conv['filter'] * coef) if not 'no_scale' in conv else conv['filter'],
+                                   strides=conv['stride'])
+            return add([skip_connection, x]) if do_skip else x
+        else:
+            x = Conv2D(int(conv['filter'] * coef) if not 'no_scale' in conv else conv['filter'],
+                       conv['kernel'],
+                       strides=conv['stride'],
+                       padding='valid' if conv['stride'] > 1 else 'same',
+                       name='conv_' + str(conv['layer_idx']),
+                       use_bias=False if conv['bnorm'] else True,
+                       kernel_initializer='glorot_uniform',
+                       bias_initializer='glorot_uniform')(x)
+            if conv['bnorm']:
+                x = BatchNormalization(epsilon=0.001, name='bnorm_' + str(conv['layer_idx']))(x)
+            if conv['leaky']:
+                x = LeakyReLU(alpha=0.1, name='leaky_' + str(conv['layer_idx']))(x)
 
     return add([skip_connection, x]) if do_skip else x
 
@@ -334,9 +428,9 @@ def create_yolov3_model(
     true_yolo_1 = Input(
         shape=(None, None, len(anchors) // 6, 4 + 1 + nb_class), name='input_3')  # grid_h, grid_w, nb_anchor, 5+nb_class
     true_yolo_2 = Input(
-        shape=(None, None, len(anchors) // 6, 4 + 1 + nb_class), name='input_4')  # grid_h, grid_w, nb_anchor, 5+nb_class
+        shape=(None, None, len(anchors) // 6, 4 + 1 + nb_class), name='input_4')
     true_yolo_3 = Input(
-        shape=(None, None, len(anchors) // 6, 4 + 1 + nb_class), name='input_5')  # grid_h, grid_w, nb_anchor, 5+nb_class
+        shape=(None, None, len(anchors) // 6, 4 + 1 + nb_class), name='input_5')
 
     input_image, skip_1, skip_2, backend_head = _make_base_yolo3_model((None, None, 3), model_scale_coefficient)
     # input_image, skip_1, skip_2, backend_head = _make_mobilenet_v2_model((None, None, 3), 0.5)
@@ -425,4 +519,4 @@ def create_yolov3_model(
 
 
 def dummy_loss(y_true, y_pred):
-    return tf.sqrt(y_pred)
+    return y_pred
