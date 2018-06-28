@@ -126,6 +126,8 @@ def create_model(nb_class,
             debug_loss=debug_loss
         )
 
+    train_model.summary()
+
     if os.path.exists(saved_weights_name):
         print('\nLoading from pretrained weights: {}\n'.format(saved_weights_name))
         train_model.load_weights(saved_weights_name)
@@ -180,7 +182,7 @@ def _main_(args):
         min_net_size=config['model']['min_input_size'],
         max_net_size=config['model']['max_input_size'],
         shuffle=True,
-        jitter=0.05,
+        jitter=0.1,
         norm=normalize
     )
 

@@ -141,9 +141,12 @@ class YoloLayer(Layer):
         count = tf.reduce_sum(object_mask)
         count_noobj = tf.reduce_sum(1 - object_mask)
         detect_mask = tf.cast(tf.to_float((pred_box_conf * object_mask) >= 0.5), dtype=K.floatx())
-        class_mask = tf.expand_dims(tf.cast(tf.to_float(tf.equal(tf.argmax(pred_box_class, -1), true_box_class)), dtype=K.floatx()), 4)
-        recall50 = tf.reduce_sum(tf.cast(tf.to_float(iou_scores >= 0.5), dtype=K.floatx()) * detect_mask * class_mask) / (count + 1e-3)
-        recall75 = tf.reduce_sum(tf.cast(tf.to_float(iou_scores >= 0.75), dtype=K.floatx()) * detect_mask * class_mask) / (count + 1e-3)
+        class_mask = tf.expand_dims(
+            tf.cast(tf.to_float(tf.equal(tf.argmax(pred_box_class, -1), true_box_class)), dtype=K.floatx()), 4)
+        recall50 = tf.reduce_sum(
+            tf.cast(tf.to_float(iou_scores >= 0.5), dtype=K.floatx()) * detect_mask * class_mask) / (count + 1e-3)
+        recall75 = tf.reduce_sum(
+            tf.cast(tf.to_float(iou_scores >= 0.75), dtype=K.floatx()) * detect_mask * class_mask) / (count + 1e-3)
         avg_iou = tf.reduce_sum(iou_scores) / (count + 1e-3)
         avg_obj = tf.reduce_sum(pred_box_conf * object_mask) / (count + 1e-3)
         avg_noobj = tf.reduce_sum(pred_box_conf * (1 - object_mask)) / (count_noobj + 1e-3)
@@ -156,10 +159,10 @@ class YoloLayer(Layer):
 
         true_box_xy, true_box_wh, xywh_mask = tf.cond(tf.less(batch_seen, self.warmup_batches + 1),
                                                       lambda: [true_box_xy + (
-                                                                  0.5 + self.cell_grid[:, :grid_h, :grid_w, :, :]) * (
-                                                                           1 - object_mask),
+                                                              0.5 + self.cell_grid[:, :grid_h, :grid_w, :, :]) * (
+                                                                       1 - object_mask),
                                                                true_box_wh + tf.zeros_like(true_box_wh) * (
-                                                                           1 - object_mask),
+                                                                       1 - object_mask),
                                                                tf.ones_like(object_mask)],
                                                       lambda: [true_box_xy,
                                                                true_box_wh,
@@ -182,10 +185,12 @@ class YoloLayer(Layer):
                           4) * \
                       self.class_scale
 
-        loss = tf.reduce_sum(tf.square(xy_delta)) + \
-               tf.reduce_sum(tf.square(wh_delta)) + \
-               tf.reduce_sum(tf.square(conf_delta)) + \
-               tf.reduce_sum(tf.square(class_delta))
+        loss_xy = tf.reduce_sum(tf.square(xy_delta), list(range(1, 5)))
+        loss_wh = tf.reduce_sum(tf.square(wh_delta), list(range(1, 5)))
+        loss_conf = tf.reduce_sum(tf.square(conf_delta), list(range(1, 5)))
+        loss_class = tf.reduce_sum(class_delta, list(range(1, 5)))
+
+        loss = loss_xy + loss_wh + loss_conf + loss_class
 
         if self.debug_loss:
             loss = tf.Print(loss, [grid_h, avg_obj], message='avg_obj \t\t', summarize=1000)
@@ -426,17 +431,21 @@ def create_yolov3_model(
 ):
     true_boxes = Input(shape=(1, 1, 1, max_box_per_image, 4), name='input_2')
     true_yolo_1 = Input(
-        shape=(None, None, len(anchors) // 6, 4 + 1 + nb_class), name='input_3')  # grid_h, grid_w, nb_anchor, 5+nb_class
+        shape=(None, None, len(anchors) // 6, 4 + 1 + nb_class),
+        name='input_3')  # grid_h, grid_w, nb_anchor, 5+nb_class
     true_yolo_2 = Input(
         shape=(None, None, len(anchors) // 6, 4 + 1 + nb_class), name='input_4')
     true_yolo_3 = Input(
         shape=(None, None, len(anchors) // 6, 4 + 1 + nb_class), name='input_5')
 
-    input_image, skip_1, skip_2, backend_head = _make_base_yolo3_model((None, None, 3), model_scale_coefficient)
-    # input_image, skip_1, skip_2, backend_head = _make_mobilenet_v2_model((None, None, 3), 0.5)
+    # input_image, skip_1, skip_2, backend_head = _make_base_yolo3_model((None, None, 3), model_scale_coefficient)
+    # base_model = Model(input_image, backend_head)
+    # for layer in base_model.layers:
+    #     layer.trainable = False
+    input_image, skip_1, skip_2, backend_head = _make_mobilenet_v2_model((None, None, 3), 0.25)
 
     # Layer 80 => 82
-    pred_yolo_1 = _conv_block(backend_head, 1.,
+    pred_yolo_1 = _conv_block(backend_head, model_scale_coefficient,
                               [{'filter': 1024, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 80},
                                {'filter': (3 * (5 + nb_class)), 'no_scale': None, 'kernel': 1, 'stride': 1,
                                 'bnorm': False, 'leaky': False, 'layer_idx': 81}],
@@ -458,7 +467,7 @@ def create_yolov3_model(
     x = concatenate([x, skip_2])
 
     # Layer 87 => 91
-    x = _conv_block(x, 1.,
+    x = _conv_block(x, model_scale_coefficient,
                     [{'filter': 256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 87},
                      {'filter': 512, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 88},
                      {'filter': 256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 89},
@@ -467,7 +476,7 @@ def create_yolov3_model(
                     do_skip=False)
 
     # Layer 92 => 94
-    pred_yolo_2 = _conv_block(x, 1.,
+    pred_yolo_2 = _conv_block(x, model_scale_coefficient,
                               [{'filter': 512, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 92},
                                {'filter': (3 * (5 + nb_class)), 'no_scale': None, 'kernel': 1, 'stride': 1,
                                 'bnorm': False, 'leaky': False, 'layer_idx': 93}],
@@ -489,7 +498,7 @@ def create_yolov3_model(
     x = concatenate([x, skip_1])
 
     # Layer 99 => 106
-    pred_yolo_3 = _conv_block(x, 1.,
+    pred_yolo_3 = _conv_block(x, model_scale_coefficient,
                               [{'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 99},
                                {'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 100},
                                {'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 101},
@@ -519,4 +528,4 @@ def create_yolov3_model(
 
 
 def dummy_loss(y_true, y_pred):
-    return y_pred
+    return tf.sqrt(tf.reduce_sum(y_pred))

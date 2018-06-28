@@ -1,10 +1,10 @@
 {
   "model": {
-    "min_input_size": 416,
-    "max_input_size": 800,
+    "min_input_size": 320,
+    "max_input_size": 608,
     "anchors": [10,37, 17,71, 28,104, 28,50, 42,79, 45,148, 70,92, 77,181, 193,310],
-    "max_box_per_image": 500,
-    "model_scale_coefficient": 1.0,
+    "max_box_per_image": 50,
+    "model_scale_coefficient": 0.25,
     "labels": [
       "person"
     ]
@@ -14,7 +14,7 @@
     "train_datasets": [
       {
         "path": "crowd_human/CrowdHuman_train/Images",
-        "images_count": 0,
+        "images_count": "all",
         "only_verified": false,
         "bbox_limits": [4, 4, "inf", "inf"]
       },
@@ -731,7 +731,7 @@
     "validation_datasets": [
       {
         "path": "crowd_human/CrowdHuman_val/Images",
-        "images_count": 256,
+        "images_count": "all",
         "only_verified": false,
         "bbox_limits": [4, 4, "inf", "inf"]
       },
@@ -762,25 +762,25 @@
       }
     ],
     "train_times": 1,
-    "batch_size": 2,
-    "learning_rate": 1e-5,
+    "batch_size": 32,
+    "learning_rate": 1e-4,
     "nb_epochs": 50,
     "warmup_epochs": 0,
     "ignore_thresh": 0.5,
     "gpus": "0",
-    "verifiers": ["sergey_head"],
+    "verifiers": ["sergey"],
     "log_prefix": "head",
-    "snapshots_path": "./snapshots/current_heads/",
+    "snapshots_path": "./snapshots/current_person_mbn/",
     "debug": true
   },
   "loss_config": {
     "debug_loss": false,
     "yolo_loss": {
       "grid_scales": [1, 1, 1],
-      "obj_scale": 10,
-      "noobj_scale": 1,
+      "obj_scale": 5,
+      "noobj_scale": 0.5,
       "xywh_scale": 1,
-      "class_scale": 0
+      "class_scale": 1
     }
   }
 }

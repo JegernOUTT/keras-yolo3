@@ -28,20 +28,20 @@ def _main_(args):
     ###############################
     #   Set some parameter
     ###############################
-    net_h, net_w = 608, 608
+    net_h, net_w = 416, 416
     obj_thresh, nms_thresh = 0.8, 0.3
 
     ###############################
     #   Load the model
     ###############################
-    infer_model = load_model('./snapshots/person_trassir/yolo3_model.h5')
+    infer_model = load_model('./snapshots/current_person/yolo3_model.h5')
     # infer_model = load_model('./snapshots/carface/yolo3_model.h5')
 
     ###############################
     #   Predict bounding boxes
     ###############################
 
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/очереди/Проход касса 16-17_20180327-112348--20180327-113348.tmp.avi'
+    input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/очереди/Проход касса 16-17_20180327-112348--20180327-113348.tmp.avi'
     # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/abandonment/rzd2/nothing/3.avi'
     # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/abandonment/rzd2/nothing/1.avi'
     # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/queues-hard/Очередь 3_20150323-174453--20150323-181951.tva.avi'
@@ -65,9 +65,9 @@ def _main_(args):
     # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/Румыны/2018-06-07_063105.avi'
     # input_path = '/mnt/nfs/Data/LPR/new_video/ro/ro500.avi'
     # input_path = '/mnt/nfs/Data/LPR/new_video/kz/new_yellow/drive-download-20180528T085002Z-001.avi'
-    input_path = '/home/svakhreev/workspace/t4/chroots/trassir_gentoo/sys/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/305214949504/ArabesqueTimisoara-7.avi'
+    # input_path = '/home/svakhreev/workspace/t4/chroots/trassir_gentoo/sys/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/305214949504/ArabesqueTimisoara-7.avi'
     input_path = '/home/svakhreev/workspace/t4/chroots/trassir_gentoo/sys/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/305214949504/ArabesqueTimisoara-5.avi'
-    input_path = '/home/svakhreev/workspace/t4/chroots/trassir_gentoo/sys/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/305214949504/ArabesqueTimisoara-14.avi'
+    # input_path = '/home/svakhreev/workspace/t4/chroots/trassir_gentoo/sys/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/305214949504/ArabesqueTimisoara-14.avi'
 
     # do detection on a video
     video_reader = cv2.VideoCapture(input_path)

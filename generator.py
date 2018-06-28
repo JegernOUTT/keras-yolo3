@@ -146,9 +146,7 @@ class BatchGenerator(Sequence):
             # increase instance counter in the current batch
             instance_count += 1
 
-        dummy_losses = [dummy_yolo_1, dummy_yolo_2, dummy_yolo_3]
-
-        return [x_batch, t_batch, yolo_1, yolo_2, yolo_3], dummy_losses
+        return [x_batch, t_batch, yolo_1, yolo_2, yolo_3], [dummy_yolo_1, dummy_yolo_2, dummy_yolo_3]
 
     def _get_net_size(self, idx):
         if idx % 10 == 0:
