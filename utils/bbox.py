@@ -1,8 +1,7 @@
+import hashlib
+
 import numpy as np
-import os
-import cv2
-from PIL import ImageDraw, Image, ImageFont
-from PIL.ImageDraw2 import Font
+from PIL import ImageDraw, Image
 
 
 class BoundBox:
@@ -61,6 +60,14 @@ def bbox_iou(box1, box2):
     return float(intersect) / max(float(union), 0.00000001)
 
 
+def generate_color_by_text(text):
+    hash_code = int(hashlib.sha256(text.encode('utf-8')).hexdigest(), 16)
+    r = int((hash_code / 255) % 255)
+    g = int((hash_code / 65025) % 255)
+    b = int((hash_code / 16581375) % 255)
+    return b, g, r, 100
+
+
 def draw_boxes(image, boxes, labels, obj_thresh):
     image = Image.fromarray(image)
     draw = ImageDraw.Draw(image, "RGBA")
@@ -73,14 +80,11 @@ def draw_boxes(image, boxes, labels, obj_thresh):
             if box.classes[i] > obj_thresh:
                 label_str += labels[i]
                 label = i
-                # print(labels[i] + ': ' + str(box.classes[i] * 100) + '%')
 
         if label >= 0:
-            fill_color = (255, 255, 255, 30)
-
             draw.text((box.xmin + 5, box.ymin + 5), label_str)
             draw.rectangle([box.xmin, box.ymin, box.xmax, box.ymax],
-                           fill=fill_color,
+                           fill=generate_color_by_text(label_str),
                            outline=(255, 255, 255, 255))
 
     return np.array(image.convert('RGB'))

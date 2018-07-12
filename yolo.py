@@ -1,5 +1,6 @@
 from keras.applications import MobileNetV2
-from keras.layers import Conv2D, Input, BatchNormalization, LeakyReLU, ZeroPadding2D, UpSampling2D, Lambda, regularizers
+from keras.layers import Conv2D, Input, BatchNormalization, LeakyReLU, ZeroPadding2D, UpSampling2D, Lambda, \
+    regularizers, MaxPooling2D
 from keras.layers.merge import add, concatenate
 from keras.models import Model
 from keras.engine.topology import Layer
@@ -330,33 +331,45 @@ def _conv_block(inp, coef, convs, resnext=False, do_skip=True):
     return add([skip_connection, x]) if do_skip else x
 
 
-def _make_base_yolo3_model(input_shape, model_scale_coefficient):
+def _make_yolo3_model(
+        input_shape,
+        max_box_per_image,
+        nb_class,
+        anchors,
+        max_grid,
+        batch_size,
+        warmup_batches,
+        ignore_thresh,
+        yolo_loss_options,
+        debug_loss,
+        model_scale_coefficient=1):
     input = Input(shape=input_shape, name='input_1')
-    # Layer  0 => 4
+    true_boxes = Input(shape=(1, 1, 1, max_box_per_image, 4), name='input_2')
+    # grid_h, grid_w, number of box in one anchor, 5+nb_class
+    true_yolo_1 = Input(shape=(None, None, 3, 4 + 1 + nb_class), name='input_3')
+    true_yolo_2 = Input(shape=(None, None, 3, 4 + 1 + nb_class), name='input_4')
+    true_yolo_3 = Input(shape=(None, None, 3, 4 + 1 + nb_class), name='input_5')
+
     x = _conv_block(input, model_scale_coefficient,
                     [{'filter': 32, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 0},
                      {'filter': 64, 'kernel': 3, 'stride': 2, 'bnorm': True, 'leaky': True, 'layer_idx': 1},
                      {'filter': 32, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 2},
                      {'filter': 64, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 3}])
 
-    # Layer  5 => 8
     x = _conv_block(x, model_scale_coefficient,
                     [{'filter': 128, 'kernel': 3, 'stride': 2, 'bnorm': True, 'leaky': True, 'layer_idx': 5},
                      {'filter': 64, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 6},
                      {'filter': 128, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 7}])
 
-    # Layer  9 => 11
     x = _conv_block(x, model_scale_coefficient,
                     [{'filter': 64, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 9},
                      {'filter': 128, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 10}])
 
-    # Layer 12 => 15
     x = _conv_block(x, model_scale_coefficient,
                     [{'filter': 256, 'kernel': 3, 'stride': 2, 'bnorm': True, 'leaky': True, 'layer_idx': 12},
                      {'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 13},
                      {'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 14}])
 
-    # Layer 16 => 36
     for i in range(7):
         x = _conv_block(x, model_scale_coefficient,
                         [{'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True,
@@ -365,14 +378,11 @@ def _make_base_yolo3_model(input_shape, model_scale_coefficient):
                           'layer_idx': 17 + i * 3}])
 
     skip_36 = x
-
-    # Layer 37 => 40
     x = _conv_block(x, model_scale_coefficient,
                     [{'filter': 512, 'kernel': 3, 'stride': 2, 'bnorm': True, 'leaky': True, 'layer_idx': 37},
                      {'filter': 256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 38},
                      {'filter': 512, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 39}])
 
-    # Layer 41 => 61
     for i in range(7):
         x = _conv_block(x, model_scale_coefficient,
                         [{'filter': 256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True,
@@ -381,14 +391,11 @@ def _make_base_yolo3_model(input_shape, model_scale_coefficient):
                           'layer_idx': 42 + i * 3}])
 
     skip_61 = x
-
-    # Layer 62 => 65
     x = _conv_block(x, model_scale_coefficient,
                     [{'filter': 1024, 'kernel': 3, 'stride': 2, 'bnorm': True, 'leaky': True, 'layer_idx': 62},
                      {'filter': 512, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 63},
                      {'filter': 1024, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 64}])
 
-    # Layer 66 => 74
     for i in range(3):
         x = _conv_block(x, model_scale_coefficient,
                         [{'filter': 512, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True,
@@ -396,56 +403,17 @@ def _make_base_yolo3_model(input_shape, model_scale_coefficient):
                          {'filter': 1024, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True,
                           'layer_idx': 67 + i * 3}])
 
-    # Layer 75 => 79
-    x = _conv_block(x, model_scale_coefficient,
-                    [{'filter': 512, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 75},
-                     {'filter': 1024, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 76},
-                     {'filter': 512, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 77},
-                     {'filter': 1024, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 78},
-                     {'filter': 512, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 79}],
-                    do_skip=False)
+    last = _conv_block(x, model_scale_coefficient,
+                       [{'filter': 512, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 75},
+                        {'filter': 1024, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 76},
+                        {'filter': 512, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 77},
+                        {'filter': 1024, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 78},
+                        {'filter': 512, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 79}],
+                       do_skip=False)
 
-    return input, skip_36, skip_61, x
-
-
-def _make_mobilenet_v2_model(input_shape, model_scale_coefficient):
-    model = MobileNetV2(input_shape, alpha=model_scale_coefficient, include_top=False, weights=None)
-
-    skip_1 = UpSampling2D(2)(model.get_layer('block_8_add').output)
-    skip_2 = UpSampling2D(2)(model.get_layer('block_14_add').output)
-
-    return model.layers[0].output, skip_1, skip_2, model.layers[-1].output
-
-
-def create_yolov3_model(
-        nb_class,
-        anchors,
-        max_box_per_image,
-        max_grid,
-        batch_size,
-        warmup_batches,
-        ignore_thresh,
-        yolo_loss_options,
-        model_scale_coefficient,
-        debug_loss
-):
-    true_boxes = Input(shape=(1, 1, 1, max_box_per_image, 4), name='input_2')
-    true_yolo_1 = Input(
-        shape=(None, None, len(anchors) // 6, 4 + 1 + nb_class),
-        name='input_3')  # grid_h, grid_w, nb_anchor, 5+nb_class
-    true_yolo_2 = Input(
-        shape=(None, None, len(anchors) // 6, 4 + 1 + nb_class), name='input_4')
-    true_yolo_3 = Input(
-        shape=(None, None, len(anchors) // 6, 4 + 1 + nb_class), name='input_5')
-
-    # input_image, skip_1, skip_2, backend_head = _make_base_yolo3_model((None, None, 3), model_scale_coefficient)
-    # base_model = Model(input_image, backend_head)
-    # for layer in base_model.layers:
-    #     layer.trainable = False
-    input_image, skip_1, skip_2, backend_head = _make_mobilenet_v2_model((None, None, 3), 0.25)
-
-    # Layer 80 => 82
-    pred_yolo_1 = _conv_block(backend_head, model_scale_coefficient,
+    # Feature Pyramid Network with 2 heads
+    # First branch
+    pred_yolo_1 = _conv_block(last, model_scale_coefficient,
                               [{'filter': 1024, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 80},
                                {'filter': (3 * (5 + nb_class)), 'no_scale': None, 'kernel': 1, 'stride': 1,
                                 'bnorm': False, 'leaky': False, 'layer_idx': 81}],
@@ -457,17 +425,16 @@ def create_yolov3_model(
                             ignore_thresh,
                             {**yolo_loss_options, 'grid_scale': yolo_loss_options['grid_scales'][0]},
                             debug_loss) \
-        ([input_image, pred_yolo_1, true_yolo_1, true_boxes])
+        ([input, pred_yolo_1, true_yolo_1, true_boxes])
 
-    # Layer 83 => 86
-    x = _conv_block(backend_head, 1.,
+    # Second branch
+    x = _conv_block(last, 1,
                     [{'filter': 256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 84}],
                     do_skip=False)
     x = UpSampling2D(2)(x)
-    x = concatenate([x, skip_2])
+    x = concatenate([x, skip_61])
 
-    # Layer 87 => 91
-    x = _conv_block(x, model_scale_coefficient,
+    x = _conv_block(x, 1,
                     [{'filter': 256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 87},
                      {'filter': 512, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 88},
                      {'filter': 256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 89},
@@ -475,8 +442,7 @@ def create_yolov3_model(
                      {'filter': 256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 91}],
                     do_skip=False)
 
-    # Layer 92 => 94
-    pred_yolo_2 = _conv_block(x, model_scale_coefficient,
+    pred_yolo_2 = _conv_block(x, 1,
                               [{'filter': 512, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 92},
                                {'filter': (3 * (5 + nb_class)), 'no_scale': None, 'kernel': 1, 'stride': 1,
                                 'bnorm': False, 'leaky': False, 'layer_idx': 93}],
@@ -488,17 +454,16 @@ def create_yolov3_model(
                             ignore_thresh,
                             {**yolo_loss_options, 'grid_scale': yolo_loss_options['grid_scales'][1]},
                             debug_loss) \
-        ([input_image, pred_yolo_2, true_yolo_2, true_boxes])
+        ([input, pred_yolo_2, true_yolo_2, true_boxes])
 
-    # Layer 95 => 98
-    x = _conv_block(x, 1.,
+    # Third branch
+    x = _conv_block(x, 1,
                     [{'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 96}],
                     do_skip=False)
     x = UpSampling2D(2)(x)
-    x = concatenate([x, skip_1])
+    x = concatenate([x, skip_36])
 
-    # Layer 99 => 106
-    pred_yolo_3 = _conv_block(x, model_scale_coefficient,
+    pred_yolo_3 = _conv_block(x, 1,
                               [{'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 99},
                                {'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 100},
                                {'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 101},
@@ -516,15 +481,219 @@ def create_yolov3_model(
                             ignore_thresh,
                             {**yolo_loss_options, 'grid_scale': yolo_loss_options['grid_scales'][2]},
                             debug_loss) \
-        ([input_image, pred_yolo_3, true_yolo_3, true_boxes])
+        ([input, pred_yolo_3, true_yolo_3, true_boxes])
 
-    losses = [loss_yolo_1, loss_yolo_2, loss_yolo_3]
+    return {
+        'base_model': Model(input, last),
+        'losses': [loss_yolo_1, loss_yolo_2, loss_yolo_3],
+        'train_model': Model([input, true_boxes, true_yolo_1, true_yolo_2, true_yolo_3],
+                             [loss_yolo_1, loss_yolo_2, loss_yolo_3]),
+        'infer_model': Model(input, [pred_yolo_1, pred_yolo_2, pred_yolo_3])
+    }
 
-    train_model = Model([input_image, true_boxes, true_yolo_1, true_yolo_2, true_yolo_3],
-                        losses)
-    infer_model = Model(input_image, [pred_yolo_1, pred_yolo_2, pred_yolo_3])
 
-    return [train_model, infer_model]
+def _make_yolo3_tiny_model(
+        input_shape,
+        max_box_per_image,
+        nb_class,
+        anchors,
+        max_grid,
+        batch_size,
+        warmup_batches,
+        ignore_thresh,
+        yolo_loss_options,
+        debug_loss,
+        model_scale_coefficient=1):
+    input = Input(shape=input_shape, name='input_1')
+    true_boxes = Input(shape=(1, 1, 1, max_box_per_image, 4), name='input_2')
+    # grid_h, grid_w, number of box in one anchor, 5+nb_class
+    true_yolo_1 = Input(shape=(None, None, 3, 4 + 1 + nb_class), name='input_3')
+    true_yolo_2 = Input(shape=(None, None, 3, 4 + 1 + nb_class), name='input_4')
+
+    x = _conv_block(input, 1,
+                    [{'filter': 16, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 0}],
+                    do_skip=False)
+    x = MaxPooling2D(pool_size=(2, 2), strides=2, padding='same')(x)
+
+    x = _conv_block(x, 1,
+                    [{'filter': 32, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 1}],
+                    do_skip=False)
+    x = MaxPooling2D(pool_size=(2, 2), strides=2, padding='same')(x)
+
+    x = _conv_block(x, 1,
+                    [{'filter': 64, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 2}],
+                    do_skip=False)
+    x = MaxPooling2D(pool_size=(2, 2), strides=2, padding='same')(x)
+
+    x = _conv_block(x, 1,
+                    [{'filter': 128, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 3}],
+                    do_skip=False)
+    x = skip = MaxPooling2D(pool_size=(2, 2), strides=2, padding='same')(x)
+
+    x = _conv_block(x, 1,
+                    [{'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 4}],
+                    do_skip=False)
+    x = MaxPooling2D(pool_size=(2, 2), strides=2, padding='same')(x)
+
+    x = _conv_block(x, 1,
+                    [{'filter': 512, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 5}],
+                    do_skip=False)
+    x = MaxPooling2D(pool_size=(2, 2), strides=1, padding='same')(x)
+
+    last = _conv_block(x, 1,
+                       [{'filter': 1024, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 6}],
+                       do_skip=False)
+
+    # Feature Pyramid Network with 2 heads
+    # First branch
+    pred_yolo_1 = _conv_block(last, 1,
+                              [{'filter': 256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 7},
+                               {'filter': 512, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 8},
+                               {'filter': (3 * (5 + nb_class)), 'no_scale': None, 'kernel': 1, 'stride': 1,
+                                'bnorm': False, 'leaky': False, 'layer_idx': 9}],
+                              do_skip=False)
+    loss_yolo_1 = YoloLayer(anchors[6:],
+                            [1 * num for num in max_grid],
+                            batch_size,
+                            warmup_batches,
+                            ignore_thresh,
+                            {**yolo_loss_options, 'grid_scale': yolo_loss_options['grid_scales'][0]},
+                            debug_loss) \
+        ([input, pred_yolo_1, true_yolo_1, true_boxes])
+
+    # Second branch
+    x = _conv_block(last, 1,
+                    [{'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 10}],
+                    do_skip=False)
+    x = UpSampling2D(2)(x)
+    x = concatenate([x, skip])
+    pred_yolo_2 = _conv_block(x, 1,
+                              [{'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 11},
+                               {'filter': (3 * (5 + nb_class)), 'no_scale': None, 'kernel': 1, 'stride': 1,
+                                'bnorm': False, 'leaky': False, 'layer_idx': 12}],
+                              do_skip=False)
+    loss_yolo_2 = YoloLayer(anchors[:6],
+                            [1 * num for num in max_grid],
+                            batch_size,
+                            warmup_batches,
+                            ignore_thresh,
+                            {**yolo_loss_options, 'grid_scale': yolo_loss_options['grid_scales'][0]},
+                            debug_loss) \
+        ([input, pred_yolo_2, true_yolo_2, true_boxes])
+
+    return {
+        'base_model': Model(input, last),
+        'losses': [loss_yolo_1, loss_yolo_2],
+        'train_model': Model([input, true_boxes, true_yolo_1, true_yolo_2],
+                             [loss_yolo_1, loss_yolo_2]),
+        'infer_model': Model(input, [pred_yolo_1, pred_yolo_2])
+    }
+
+
+def _make_mobilenet_v2_model(
+        input_shape,
+        max_box_per_image,
+        nb_class,
+        anchors,
+        max_grid,
+        batch_size,
+        warmup_batches,
+        ignore_thresh,
+        yolo_loss_options,
+        debug_loss,
+        model_scale_coefficient=1):
+    model = MobileNetV2(input_shape, alpha=model_scale_coefficient, include_top=False, weights=None)
+    input, skip, last = model.layers[0].output, UpSampling2D(2)(model.get_layer('block_14_add').output),\
+                        model.layers[-1].output
+
+    true_boxes = Input(shape=(1, 1, 1, max_box_per_image, 4), name='input_2')
+    # grid_h, grid_w, number of box in one anchor, 5+nb_class
+    true_yolo_1 = Input(shape=(None, None, 3, 4 + 1 + nb_class), name='input_3')
+    true_yolo_2 = Input(shape=(None, None, 3, 4 + 1 + nb_class), name='input_4')
+
+    # Feature Pyramid Network with 2 heads
+    # First branch
+    pred_yolo_1 = _conv_block(last, 1.,
+                              [{'filter': 256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 7},
+                               {'filter': 512, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 8},
+                               {'filter': (3 * (5 + nb_class)), 'no_scale': None, 'kernel': 1, 'stride': 1,
+                                'bnorm': False, 'leaky': False, 'layer_idx': 9}],
+                              do_skip=False)
+    loss_yolo_1 = YoloLayer(anchors[6:],
+                            [1 * num for num in max_grid],
+                            batch_size,
+                            warmup_batches,
+                            ignore_thresh,
+                            {**yolo_loss_options, 'grid_scale': yolo_loss_options['grid_scales'][0]},
+                            debug_loss) \
+        ([input, pred_yolo_1, true_yolo_1, true_boxes])
+
+    # Second branch
+    x = _conv_block(last, 1,
+                    [{'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 10}],
+                    do_skip=False)
+    x = UpSampling2D(2)(x)
+    x = concatenate([x, skip])
+    pred_yolo_2 = _conv_block(x, 1,
+                              [{'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 11},
+                               {'filter': (3 * (5 + nb_class)), 'no_scale': None, 'kernel': 1, 'stride': 1,
+                                'bnorm': False, 'leaky': False, 'layer_idx': 12}],
+                              do_skip=False)
+    loss_yolo_2 = YoloLayer(anchors[:6],
+                            [1 * num for num in max_grid],
+                            batch_size,
+                            warmup_batches,
+                            ignore_thresh,
+                            {**yolo_loss_options, 'grid_scale': yolo_loss_options['grid_scales'][0]},
+                            debug_loss) \
+        ([input, pred_yolo_2, true_yolo_2, true_boxes])
+
+    return {
+        'base_model': Model(input, last),
+        'losses': [loss_yolo_1, loss_yolo_2],
+        'train_model': Model([input, true_boxes, true_yolo_1, true_yolo_2],
+                             [loss_yolo_1, loss_yolo_2]),
+        'infer_model': Model(input, [pred_yolo_1, pred_yolo_2])
+    }
+
+
+def create_full_model(
+        model_type,
+        freeze_base_model,
+        nb_class,
+        anchors,
+        max_box_per_image,
+        max_grid,
+        batch_size,
+        warmup_batches,
+        ignore_thresh,
+        yolo_loss_options,
+        model_scale_coefficient,
+        debug_loss
+):
+    assert(model_type in ['mobilenet2', 'tiny_yolo3', 'yolo3'])
+
+    input_shape = None, None, 3
+
+    models = None
+    if model_type == 'mobilenet2':
+        models = _make_mobilenet_v2_model(input_shape, max_box_per_image, nb_class, anchors, max_grid, batch_size,
+                                          warmup_batches, ignore_thresh, yolo_loss_options, debug_loss,
+                                          model_scale_coefficient)
+    elif model_type == 'tiny_yolo3':
+        models = _make_yolo3_tiny_model(input_shape, max_box_per_image, nb_class, anchors, max_grid, batch_size,
+                                        warmup_batches, ignore_thresh, yolo_loss_options, debug_loss,
+                                        model_scale_coefficient)
+    elif model_type == 'yolo3':
+        models = _make_yolo3_model(input_shape, max_box_per_image, nb_class, anchors, max_grid, batch_size,
+                                   warmup_batches, ignore_thresh, yolo_loss_options, debug_loss,
+                                   model_scale_coefficient)
+
+    if freeze_base_model:
+        for layer in models['base_model'].layers:
+            layer.trainable = False
+
+    return [models['train_model'], models['infer_model']]
 
 
 def dummy_loss(y_true, y_pred):

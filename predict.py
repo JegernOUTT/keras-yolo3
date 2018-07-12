@@ -5,115 +5,112 @@ import argparse
 import json
 import cv2
 import keras
-from keras.applications import mobilenet
+from keras_applications.mobilenet_v2 import relu6
 
 from utils.utils import get_yolo_boxes
 from utils.bbox import draw_boxes
 from keras.models import load_model
-from tqdm import tqdm
 
+model_name = '{}_model.h5'
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = ""  # define the GPU to work on here
 
 
 def _main_(args):
     config_path = args.conf
-    input_path = args.input
 
     with open(config_path) as config_buffer:
         config = json.load(config_buffer)
+        model_config = config['model']
+        config = config['inference']
 
-    # os.environ['CUDA_VISIBLE_DEVICES'] = config['train']['gpus']
+    os.environ['CUDA_VISIBLE_DEVICES'] = config['gpu']
+    net_size = config['input_size']
+    obj_thresh, nms_thresh = config['obj_thresh'], config['nms_thresh']
+    snapshot_name = os.path.join(config["snapshots_path"], model_name.format(model_config['type']))
+    input_path = config["input_path"]
+    every_nth = config["process_nth_frame"]
 
-    ###############################
-    #   Set some parameter
-    ###############################
-    net_h, net_w = 416, 416
-    obj_thresh, nms_thresh = 0.8, 0.3
+    if not os.path.exists(snapshot_name):
+        raise FileNotFoundError(snapshot_name)
 
-    ###############################
-    #   Load the model
-    ###############################
-    infer_model = load_model('./snapshots/current_person/yolo3_model.h5')
-    # infer_model = load_model('./snapshots/carface/yolo3_model.h5')
+    if not os.path.exists(input_path):
+        raise FileNotFoundError(input_path)
 
-    ###############################
-    #   Predict bounding boxes
-    ###############################
+    custom_objects = {}
+    if config['is_mobilenet2']:
+        custom_objects = {'relu6': relu6}
+    infer_model = load_model(snapshot_name, custom_objects=custom_objects)
 
-    input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/очереди/Проход касса 16-17_20180327-112348--20180327-113348.tmp.avi'
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/abandonment/rzd2/nothing/3.avi'
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/abandonment/rzd2/nothing/1.avi'
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/queues-hard/Очередь 3_20150323-174453--20150323-181951.tva.avi'
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/abandonment/rzd2/left/0.avi'
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/abandonment/rzd2/left/5.avi'
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/queues-hard/касса 2-3_nzvsm_2.avi'
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/test/DP-kass-5ka/DS-2CD2542FWD-IS 3_20180419-180000--20180419-190000-1.avi'
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/test/DP-kass-5ka/DS-2CD2542FWD-IS 3_20180419-180000--20180419-190000-2.avi'
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/test/DP-kass-5ka/DS-2CD2542FWD-IS 3_20180419-180000--20180419-190000-3.avi'
-    # input_path = 'rtsp://admin:hik12345@172.16.16.34/Streaming/Channels/1'
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/Downloads/1.mp4'
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/Downloads/2.mp4'
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/Downloads/3.mp4'
-    # input_path = 'rtsp://172.17.17.54:555/qRbD2KXT_m/'
-    # input_path = 'rtsp://admin:admin1337@172.16.17.13'
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/очереди/кассы 8-9_20171110-192101--20171110-192601.avi'
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/TR-D2123IR3v2 4_20180604-090709--20180604-091328.avi'
-    # input_path = 'rtsp://192.168.0.35:555/S1uxjhff_m/'
-    # input_path = 'rtsp://192.168.0.35:555/VmSjBQbX_m/'
-    # input_path = 'rtsp://172.20.25.144:555/FOJuplwr_m/'
-    # input_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/Румыны/2018-06-07_063105.avi'
-    # input_path = '/mnt/nfs/Data/LPR/new_video/ro/ro500.avi'
-    # input_path = '/mnt/nfs/Data/LPR/new_video/kz/new_yellow/drive-download-20180528T085002Z-001.avi'
-    # input_path = '/home/svakhreev/workspace/t4/chroots/trassir_gentoo/sys/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/305214949504/ArabesqueTimisoara-7.avi'
-    input_path = '/home/svakhreev/workspace/t4/chroots/trassir_gentoo/sys/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/305214949504/ArabesqueTimisoara-5.avi'
-    # input_path = '/home/svakhreev/workspace/t4/chroots/trassir_gentoo/sys/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/305214949504/ArabesqueTimisoara-14.avi'
-
-    # do detection on a video
     video_reader = cv2.VideoCapture(input_path)
-    # nb_frames = int(video_reader.get(cv2.CAP_PROP_FRAME_COUNT))
-    # frame_h = int(video_reader.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    # frame_w = int(video_reader.get(cv2.CAP_PROP_FRAME_WIDTH))
-    # video_writer = cv2.VideoWriter('/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/china_out.avi',
-    #                                cv2.VideoWriter_fourcc(*'MPEG'),
-    #                                50.0,
-    #                                (frame_w, frame_h))
-    every_nth = 10
 
-    for i in tqdm(range(100000)):
-        # Run online profiling with 'op' view and 'opts' options at step 15, 18, 20.
+    if config['need_to_save_output']:
+        frame_h = int(video_reader.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        frame_w = int(video_reader.get(cv2.CAP_PROP_FRAME_WIDTH))
+        video_writer = cv2.VideoWriter(config['output_path'], cv2.VideoWriter_fourcc(*'MPEG'),
+                                       50.0, (frame_w, frame_h))
 
-        _, image = video_reader.read()
+    frames_processed = 0
+    cv2.namedWindow('image', cv2.WINDOW_KEEPRATIO)
+    while True:
+        read, image = video_reader.read()
+        if not read:
+            break
 
-        if i % every_nth != 0:
+        frames_processed += 1
+
+        if frames_processed % every_nth != 0:
             continue
 
-        # predict the bounding boxes
-        boxes = get_yolo_boxes(infer_model, image, net_h, net_w, config['model']['anchors'], obj_thresh, nms_thresh)
+        boxes = get_yolo_boxes(infer_model, image, net_size, net_size,
+                               model_config['anchors'], obj_thresh, nms_thresh)
+        image = draw_boxes(image, boxes, model_config['labels'], obj_thresh)
 
-        # draw bounding boxes on the image using labels
-        image = draw_boxes(image, boxes, config['model']['labels'], obj_thresh)
-        # video_writer.write(image)
-        cv2.imshow('Image', cv2.resize(image, (1280, 720)))
-        cv2.waitKey(1)
+        if config['need_to_save_output']:
+            video_writer.write(image)
 
-    # video_writer.release()
+        cv2.imshow('image', image)
+        key = cv2.waitKeyEx(1)
+        if key == 27:  # esc
+            break
+        elif key == 32:  # space
+            while cv2.waitKeyEx(0) != 32:
+                pass
+        # process_nth_frame
+        elif key == 81 or key == 113:  # q
+            every_nth = every_nth if every_nth <= 1 else every_nth - 1
+        elif key == 69 or key == 101:  # e
+            every_nth = every_nth if every_nth >= 100 else every_nth + 1
+
+        # obj_thresh
+        elif key == 64 or key == 97:  # a
+            obj_thresh = obj_thresh if obj_thresh <= 0.1 else obj_thresh - 0.05
+        elif key == 68 or key == 100:  # d
+            obj_thresh = obj_thresh if obj_thresh >= 0.95 else obj_thresh + 0.05
+
+        # net_size
+        elif key == 90 or key == 122:  # z
+            net_size = net_size if net_size <= 64 else net_size - 32
+        elif key == 67 or key == 99:  # c
+            net_size = net_size if net_size >= 1600 else net_size + 32
+
+        print('\rProcessed {} frame: net_size[{}]; obj_thresh[{:.2f}]; nms_thresh[{:.2f}]; process_nth_frame[{}]'.format(
+            frames_processed, net_size, obj_thresh, nms_thresh, every_nth
+        ), end='')
+
+    if config['need_to_save_output']:
+        video_writer.release()
     video_reader.release()
+    cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser(
-        description='Predict with a trained yolo model')
+        description='Predict with a trained model')
 
     argparser.add_argument(
         '-c',
         '--conf',
         help='path to configuration file')
-
-    argparser.add_argument(
-        '-i',
-        '--input',
-        help='path to an image or an video (mp4 format)')
 
     args = argparser.parse_args()
     _main_(args)

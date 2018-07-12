@@ -1,10 +1,10 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
-
 import keras
 import keras.backend as K
 from tensorflow.python.framework import graph_util, graph_io
 
+
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 K.set_learning_phase(0)
 
 model_path = 'snapshots/current_heads/'

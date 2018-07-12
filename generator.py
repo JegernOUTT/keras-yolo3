@@ -23,6 +23,7 @@ class BatchGenerator(Sequence):
                  norm=None):
         self.instances = instances
         self.batch_size = batch_size
+        self.is_tiny_model = len(anchors) == 12
         self.labels = labels
         self.downsample = downsample
         self.max_box_per_image = max_box_per_image
@@ -58,17 +59,20 @@ class BatchGenerator(Sequence):
         t_batch = np.zeros((r_bound - l_bound, 1, 1, 1, self.max_box_per_image, 4))  # list of groundtruth boxes
 
         # initialize the inputs and the outputs
-        yolo_1 = np.zeros((r_bound - l_bound, 1 * base_grid_h, 1 * base_grid_w, len(self.anchors) // 3,
+        yolo_1 = np.zeros((r_bound - l_bound, 1 * base_grid_h, 1 * base_grid_w, 3,
                            4 + 1 + len(self.labels)))  # desired network output 1
-        yolo_2 = np.zeros((r_bound - l_bound, 2 * base_grid_h, 2 * base_grid_w, len(self.anchors) // 3,
+        yolo_2 = np.zeros((r_bound - l_bound, 2 * base_grid_h, 2 * base_grid_w, 3,
                            4 + 1 + len(self.labels)))  # desired network output 2
-        yolo_3 = np.zeros((r_bound - l_bound, 4 * base_grid_h, 4 * base_grid_w, len(self.anchors) // 3,
-                           4 + 1 + len(self.labels)))  # desired network output 3
-        yolos = [yolo_3, yolo_2, yolo_1]
+        yolos = [yolo_2, yolo_1]
+        if not self.is_tiny_model:
+            yolo_3 = np.zeros((r_bound - l_bound, 4 * base_grid_h, 4 * base_grid_w, 3,
+                               4 + 1 + len(self.labels)))  # desired network output 3
+            yolos = [yolo_3, *yolos]
 
         dummy_yolo_1 = np.zeros((r_bound - l_bound, 1))
         dummy_yolo_2 = np.zeros((r_bound - l_bound, 1))
-        dummy_yolo_3 = np.zeros((r_bound - l_bound, 1))
+        if not self.is_tiny_model:
+            dummy_yolo_3 = np.zeros((r_bound - l_bound, 1))
 
         instance_count = 0
         true_box_index = 0
@@ -146,7 +150,10 @@ class BatchGenerator(Sequence):
             # increase instance counter in the current batch
             instance_count += 1
 
-        return [x_batch, t_batch, yolo_1, yolo_2, yolo_3], [dummy_yolo_1, dummy_yolo_2, dummy_yolo_3]
+        if self.is_tiny_model:
+            return [x_batch, t_batch, yolo_1, yolo_2], [dummy_yolo_1, dummy_yolo_2]
+        else:
+            return [x_batch, t_batch, yolo_1, yolo_2, yolo_3], [dummy_yolo_1, dummy_yolo_2, dummy_yolo_3]
 
     def _get_net_size(self, idx):
         if idx % 10 == 0:
@@ -190,6 +197,10 @@ class BatchGenerator(Sequence):
                    ("lanczos4", cv2.INTER_LANCZOS4)]
         image = cv2.resize(image, (new_w, new_h), interpolation=random.choice(methods)[1])
         image = apply_random_scale_and_crop(image, new_w, new_h, net_w, net_h, dx, dy)
+
+        # gray = np.random.randint(2)
+        # if gray:
+        #     image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
         # randomly distort hsv space
         if not np.isclose(self.jitter, 0.0):

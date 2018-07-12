@@ -113,6 +113,8 @@ class TrassirAnnotations:
 
     # Internals #
     def _load_all_folders(self):
+        self._search_folders_recursively()
+
         self._train_index, train_folders = [], {}
         for folder in tqdm(self._train_folders, desc='Loading training folders', leave=False, miniters=1):
             images_index = self._load_folder(folder['path'])
@@ -128,6 +130,31 @@ class TrassirAnnotations:
                 self._validation_index.extend(images_index)
                 validation_folders[folder['path']] = {'images': images_index, **folder}
 
+        self._validation_folders = validation_folders
+
+    def _search_folders_recursively(self):
+        train_folders = []
+        for folder in self._train_folders:
+            if not folder['recursive']:
+                train_folders.append(folder)
+            else:
+                folder_ops = deepcopy(folder)
+                for cwd, folders, files in os.walk(folder['path']):
+                    if 'annotations.pickle' in files or 'annotations.json' in files:
+                        folder_ops['path'] = cwd
+                        train_folders.append(deepcopy(folder_ops))
+        self._train_folders = train_folders
+
+        validation_folders = []
+        for folder in self._validation_folders:
+            if not folder['recursive']:
+                validation_folders.append(folder)
+            else:
+                folder_ops = deepcopy(folder)
+                for cwd, folders, files in os.walk(folder['path']):
+                    if 'annotations.pickle' in files or 'annotations.json' in files:
+                        folder_ops['path'] = cwd
+                        validation_folders.append(deepcopy(folder_ops))
         self._validation_folders = validation_folders
 
     def _retrieve_categories(self):
