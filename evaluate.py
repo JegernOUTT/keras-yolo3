@@ -5,13 +5,18 @@ import json
 import os
 
 from keras.models import load_model
+from keras_applications.mobilenet_v2 import relu6
 
 from generator import BatchGenerator
-from preprocessing import load_images
+from preprocessing import TrassirRectShapesAnnotations
 from utils.utils import normalize, evaluate
 
+model_name = '{}_model.h5'
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # define the GPU to work on here
+
+
+def is_tiny_model(model_name):
+    return model_name in ['tiny_yolo3', 'mobilenet2']
 
 
 def _main_(args):
@@ -20,20 +25,30 @@ def _main_(args):
     with open(config_path) as config_buffer:
         config = json.loads(config_buffer.read())
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = config['train']['gpus']
-    ###############################
-    #   Create the validation generator
-    ###############################
-    labels = config['model']['labels']
-    train_ints, valid_ints = load_images(config)
+    os.environ['CUDA_VISIBLE_DEVICES'] = config['inference']['gpu']
+    is_tiny = is_tiny_model(config['model']['type'])
+    snapshot_name = os.path.join(config['inference']['snapshots_path'], model_name.format(config['model']['type']))
+    anchors = config['model']['anchors'] if not is_tiny else config['model']['tiny_anchors']
 
-    labels = sorted(labels.keys())
+    train_datasets = [{**ds, 'path': os.path.join(config['train']['images_dir'], ds['path'])}
+                      for ds in config['train']['train_datasets']]
+    validation_datasets = [{**ds, 'path': os.path.join(config['train']['images_dir'], ds['path'])}
+                           for ds in config['train']['validation_datasets']]
+
+    trassir_annotation = TrassirRectShapesAnnotations(train_datasets, validation_datasets)
+    trassir_annotation.load()
+    trassir_annotation.print_statistics()
+    validation = trassir_annotation.get_validation_instances(config['model']['labels'],
+                                                             config['train']['verifiers'],
+                                                             config['model']['max_box_per_image'])
+
+    print('There is {} validation instances'.format(len(validation)))
 
     valid_generator = BatchGenerator(
-        instances=valid_ints,
-        anchors=config['model']['anchors'],
-        labels=labels,
-        downsample=32,  # ratio between network input's size and network output's size, 32 for YOLOv3
+        instances=validation,
+        anchors=anchors,
+        labels=config['model']['labels'],
+        downsample=32,
         max_box_per_image=config['model']['max_box_per_image'],
         batch_size=config['train']['batch_size'],
         min_net_size=config['model']['min_input_size'],
@@ -43,17 +58,15 @@ def _main_(args):
         norm=normalize
     )
 
-    ###############################
-    #   Load the model and do evaluation
-    ###############################
-    infer_model = load_model(config['train']['saved_weights_name'])
+    custom_objects = {}
+    if config['is_mobilenet2']:
+        custom_objects = {'relu6': relu6}
+    infer_model = load_model(snapshot_name, custom_objects=custom_objects)
 
-    # compute mAP for all the classes
-    average_precisions = evaluate(infer_model, valid_generator)
+    recalls, average_precisions = evaluate(infer_model, valid_generator)
 
-    # print the score
     for label, average_precision in average_precisions.items():
-        print(labels[label] + ': {:.4f}'.format(average_precision))
+        print(config['model']['labels'][label] + ': {:.4f}'.format(average_precision))
     print('mAP: {:.4f}'.format(sum(average_precisions.values()) / len(average_precisions)))
 
 

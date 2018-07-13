@@ -1,6 +1,6 @@
 {
   "model": {
-    "type": "yolo3",
+    "type": "tiny_yolo3",
     "need_to_freeze_base": true,
     "min_input_size": 416,
     "max_input_size": 608,
@@ -17,42 +17,42 @@
     "train_datasets": [
       {
         "path": "foreign_datasets/crowd_human/CrowdHuman_train/Images",
-        "images_count": 0,
+        "images_count": "all",
         "only_verified": false,
         "bbox_limits": [20, 20, "inf", "inf"],
         "recursive": false
       },
       {
         "path": "negatives",
-        "images_count": "all",
+        "images_count": 0,
         "only_verified": false,
         "bbox_limits": [20, 20, "inf", "inf"],
         "recursive": true
       },
       {
         "path": "office",
-        "images_count": "all",
+        "images_count": 0,
         "only_verified": false,
         "bbox_limits": [20, 20, "inf", "inf"],
         "recursive": true
       },
       {
         "path": "other",
-        "images_count": "all",
+        "images_count": 0,
         "only_verified": false,
         "bbox_limits": [20, 20, "inf", "inf"],
         "recursive": true
       },
       {
         "path": "outdoor",
-        "images_count": "all",
+        "images_count": 0,
         "only_verified": false,
         "bbox_limits": [20, 20, "inf", "inf"],
         "recursive": true
       },
       {
         "path": "shop",
-        "images_count": "all",
+        "images_count": 0,
         "only_verified": false,
         "bbox_limits": [20, 20, "inf", "inf"],
         "recursive": true
@@ -79,7 +79,7 @@
     "learning_rate": 1e-3,
     "nb_epochs": 100,
     "warmup_epochs": 0,
-    "ignore_thresh": 0.8,
+    "ignore_thresh": 0.5,
     "gpus": "0",
     "verifiers": ["sergey"],
     "log_prefix": "person",
@@ -90,12 +90,12 @@
     "input_size": 608,
     "obj_thresh": 0.5,
     "nms_thresh": 0.45,
-    "gpu": "",
+    "gpu": "0",
     "snapshots_path": "./snapshots/current_person/",
-    "input_path": "/mnt/nfs/Videos/outdoor_peoples_videos/bright_by_moscow_time/primorskiy_bulvar.ts.mp4",
+    "input_path": "/mnt/nfs/Videos/outdoor_peoples_videos/dim_by_moscow_time/stambulskiy_park_3.ts.mp4",
     "process_nth_frame": 1,
-    "need_to_save_output": false,
-    "output_path": "",
+    "need_to_save_output": true,
+    "output_path": "tmp.mp4",
     "is_mobilenet2": false
   },
   "loss_config": {
@@ -103,9 +103,17 @@
     "yolo_loss": {
       "grid_scales": [1, 1, 1],
       "obj_scale": 5,
-      "noobj_scale": 1,
+      "noobj_scale": 0.5,
       "xywh_scale": 1,
       "class_scale": 1
     }
+  },
+  "masknet_model": {
+    "input_size": 416,
+    "snapshot_path": "./snapshots/current_person/",
+    "batch_size": 64,
+    "coco_dir": "/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/coco",
+    "nb_epochs": 100
+
   }
 }

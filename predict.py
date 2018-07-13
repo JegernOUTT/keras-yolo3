@@ -16,6 +16,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
 def _main_(args):
+    keras.backend.set_learning_phase(0)
     config_path = args.conf
 
     with open(config_path) as config_buffer:

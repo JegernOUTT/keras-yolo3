@@ -288,7 +288,12 @@ def get_yolo_boxes(model, image, net_h, net_w, anchors, obj_thresh, nms_thresh):
 
     for i in range(len(yolos)):
         # decode the output of the network
-        yolo_anchors = anchors[(2 - i) * 6:(3 - i) * 6]  # config['model']['anchors']
+        yolo_anchors = []
+        if len(yolos) == 2:
+            yolo_anchors = anchors[(1 - i) * 6:(2 - i) * 6]
+        elif len(yolos) == 3:
+            yolo_anchors = anchors[(2 - i) * 6:(3 - i) * 6]
+        assert (len(yolo_anchors) == 6)
         boxes += decode_netout(yolos[i][0], yolo_anchors, obj_thresh, net_h, net_w)
 
     # correct the sizes of the bounding boxes
@@ -314,7 +319,12 @@ def get_yolo_boxes_batch(model, images, net_h, net_w, anchors, obj_thresh, nms_t
 
         for i in range(len(yolos)):
             # decode the output of the network
-            yolo_anchors = anchors[(2 - i) * 6:(3 - i) * 6]  # config['model']['anchors']
+            yolo_anchors = []
+            if len(yolos) == 2:
+                yolo_anchors = anchors[(1 - i) * 6:(2 - i) * 6]
+            elif len(yolos) == 3:
+                yolo_anchors = anchors[(2 - i) * 6:(3 - i) * 6]
+            assert(len(yolo_anchors) == 6)
             boxes += decode_netout(yolos[i][batch_i], yolo_anchors, obj_thresh, net_h, net_w)
 
         boxes = correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)

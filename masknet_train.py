@@ -1,13 +1,13 @@
 #!/usr/bin/python3
+import argparse
+import json
 import os
 import random
 import threading
 from random import shuffle
 
 import cv2
-import keras
 import keras.backend as K
-import keras.layers as layers
 import numpy as np
 import tensorflow as tf
 from keras.callbacks import LearningRateScheduler
@@ -16,10 +16,15 @@ from keras.engine.saving import load_model
 from keras.layers import Input
 from keras.metrics import binary_accuracy
 from keras.models import Model
+from keras_applications.mobilenet_v2 import relu6
 from pycocotools.coco import COCO
 from scipy.misc import imresize
 
 import masknet
+
+model_name = '{}_model.h5'
+masknet_model_name = '{}_masknet_model.h5'
+masknet_weights_name = '{}_masknet_weights.h5'
 
 
 def roi_pool_cpu(frame, bbox, pool_size):
@@ -41,7 +46,6 @@ def roi_pool_cpu(frame, bbox, pool_size):
     return slc
 
 
-# TODO: convert to our own annotations format
 def process_coco(coco, img_path, limit):
     res = []
     cat_ids = coco.getCatIds(catNms=['person'])
@@ -113,10 +117,6 @@ def process_coco(coco, img_path, limit):
 
 
 class threadsafe_iter:
-    """Takes an iterator/generator and makes it thread-safe by
-    serializing call to the `next` method of given iterator/generator.
-    """
-
     def __init__(self, it):
         self.it = it
         self.lock = threading.Lock()
@@ -130,9 +130,6 @@ class threadsafe_iter:
 
 
 def threadsafe_generator(f):
-    """A decorator that takes a generator function and makes it thread-safe.
-    """
-
     def g(*a, **kw):
         return threadsafe_iter(f(*a, **kw))
 
@@ -147,7 +144,7 @@ def my_preprocess(im, h, w):
 
 
 @threadsafe_generator
-def fit_generator(imgs, batch_size, net_h, net_w):
+def fit_generator(imgs, batch_size, net_size):
     ii = 0
     fake_msk = np.zeros((masknet.my_msk_inp * 2, masknet.my_msk_inp * 2), dtype=np.uint8).astype('float32')
     while True:
@@ -168,7 +165,7 @@ def fit_generator(imgs, batch_size, net_h, net_w):
                 frame = cv2.imread(os.path.join(img_path, img_name))
                 if flip:
                     frame = np.fliplr(frame)
-                x1.append(my_preprocess(frame, net_h, net_w))
+                x1.append(my_preprocess(frame, net_size, net_size))
 
                 my_rois = []
                 for roi in rois:
@@ -195,8 +192,6 @@ def fit_generator(imgs, batch_size, net_h, net_w):
                 msks = msks[..., np.newaxis]
 
                 y.append(msks)
-            #gc.collect()
-            #print("yield",ii)
             ii += 1
             yield ([np.array(x1), np.array(x2)], np.array(y))
 
@@ -231,10 +226,29 @@ class MyModelCheckpoint(ModelCheckpoint):
         self.model = tmp_model
 
 
-if __name__ == "__main__":
-    net_h, net_w = 416, 416
+def _main_(args):
+    with open(args.conf) as config_buffer:
+        config = json.loads(config_buffer.read())
+        masknet_config = config['masknet_model']
+        model_config = config['model']
+        infer_config = config['inference']
 
-    infer_model = load_model('./snapshots/person_trassir/yolo3_model.h5')
+    net_size = masknet_config['input_size']
+    batch_size = masknet_config['batch_size']
+    nb_epochs = masknet_config['nb_epochs']
+    coco_dir = masknet_config['coco_dir']
+    snapshot_name = os.path.join(masknet_config['snapshot_path'], model_name.format(model_config['type']))
+    masknet_snapshot_weights_name = os.path.join(masknet_config["snapshots_path"],
+                                                 masknet_weights_name.format(model_config['type']))
+
+    if not os.path.exists(snapshot_name):
+        raise FileNotFoundError(snapshot_name)
+
+    custom_objects = {}
+    if infer_config['is_mobilenet2']:
+        custom_objects = {'relu6': relu6}
+    infer_model = load_model(snapshot_name, custom_objects=custom_objects)
+
     for layer in infer_model.layers:
         layer.trainable = False
 
@@ -243,7 +257,7 @@ if __name__ == "__main__":
     C4 = infer_model.get_layer('leaky_60').output
     C5 = infer_model.get_layer('leaky_78').output
 
-    mn_model = masknet.create_model(image_size=(net_h, net_w, 3))
+    mn_model = masknet.create_model(image_size=(net_size, net_size, 3))
     mn_model.summary()
 
     m_roi_input = Input(shape=(masknet.my_num_rois, 4), name='input_2')
@@ -253,43 +267,47 @@ if __name__ == "__main__":
     model = Model(inputs=[infer_model.inputs[0], m_roi_input], outputs=x)
     model.summary()
     model.compile(loss=[masknet.my_loss], optimizer='adam', metrics=[my_accuracy])
-    mn_model.load_weights("weights.hdf5")
+    mn_model.load_weights(masknet_snapshot_weights_name)
 
-    bdir = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/coco'
-    train_coco = COCO(os.path.join(bdir, "annotations/person_keypoints_train2017.json"))
-    val_coco = COCO(os.path.join(bdir, "annotations/person_keypoints_val2017.json"))
-    train_imgs = process_coco(train_coco, os.path.join(bdir, "images/train2017"), None)
-    val_imgs = process_coco(val_coco, os.path.join(bdir, "images/val2017"), None)
-
-    train_coco = None
-    val_coco = None
+    # Currently it works only with coco dataset
+    # TODO: create TrassirPolygonShapesAnnotations and reimplement this part
+    train_coco = COCO(os.path.join(coco_dir, "annotations/person_keypoints_train2017.json"))
+    val_coco = COCO(os.path.join(coco_dir, "annotations/person_keypoints_val2017.json"))
+    train_imgs = process_coco(train_coco, os.path.join(coco_dir, "images/train2017"), None)
+    val_imgs = process_coco(val_coco, os.path.join(coco_dir, "images/val2017"), None)
 
     train_imgs += val_imgs[5000:]
     val_imgs = val_imgs[:5000]
 
-    batch_size = 64
+    train_data = fit_generator(train_imgs, batch_size, net_size, net_size)
 
-    train_data = fit_generator(train_imgs, batch_size, net_h, net_w)
+    validation_data = fit_generator(val_imgs, batch_size, net_size, net_size)
 
-    validation_data = fit_generator(val_imgs, batch_size, net_h, net_w)
-
-    lr_schedule = lambda epoch: 0.001 if epoch < 20 else 0.0001
-    callbacks = [LearningRateScheduler(lr_schedule)]
-
+    callbacks = [LearningRateScheduler(lambda epoch: 0.001 if epoch < 20 else 0.0001)]
     mcp = MyModelCheckpoint(filepath="weights.hdf5", monitor='val_loss', save_best_only=True)
     mcp.my_model = mn_model
-
     callbacks.append(mcp)
-
     callbacks.append(ModelCheckpoint(filepath="all_weights.hdf5", monitor='val_loss', save_best_only=True))
-
     model.fit_generator(train_data,
                         steps_per_epoch=len(train_imgs) / batch_size,
                         validation_steps=len(val_imgs) / batch_size,
-                        epochs=100,
+                        epochs=nb_epochs,
                         validation_data=validation_data,
                         max_queue_size=10,
                         workers=2,
                         use_multiprocessing=False,
                         verbose=1,
                         callbacks=callbacks)
+
+
+if __name__ == '__main__':
+    argparser = argparse.ArgumentParser(
+        description='Train masknet model')
+
+    argparser.add_argument(
+        '-c',
+        '--conf',
+        help='path to configuration file')
+
+    args = argparser.parse_args()
+    _main_(args)

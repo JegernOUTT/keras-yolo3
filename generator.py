@@ -4,7 +4,7 @@ import cv2
 import copy
 import numpy as np
 from keras.utils import Sequence
-from utils.bbox import BoundBox, bbox_iou
+from utils.bbox import BoundBox, bbox_iou, draw_boxes
 from utils.image import apply_random_scale_and_crop, random_distort_image, random_flip, correct_bounding_boxes
 
 
@@ -83,6 +83,7 @@ class BatchGenerator(Sequence):
             w, h = train_instance['width'], train_instance['height']
             annotations = [{
                 'name': a['category_name'],
+                'category_id': a['category_id'],
                 'xmin': int(round(a['bbox'][0][0] * w)) if int(round(a['bbox'][0][0] * w)) < w else w,
                 'xmax': int(round(a['bbox'][1][0] * w)) if int(round(a['bbox'][1][0] * w)) < w else w,
                 'ymin': int(round(a['bbox'][0][1] * h)) if int(round(a['bbox'][0][1] * h)) < h else h,
@@ -138,13 +139,13 @@ class BatchGenerator(Sequence):
                 x_batch[instance_count] = self.norm(img)
             else:
                 # plot image and bounding boxes for sanity check
+                boxes = []
                 for obj in all_objs:
-                    cv2.rectangle(img, (obj['xmin'], obj['ymin']), (obj['xmax'], obj['ymax']), (255, 0, 0), 1)
-                    cv2.putText(img, obj['name'],
-                                (obj['xmin'] + 2, obj['ymin'] + 12),
-                                0, 1.2e-4 * img.shape[0],
-                                (0, 255, 0), 1)
-
+                    classes = np.zeros((len(self.labels)), dtype=np.float)
+                    classes[obj['category_id']] = 1.
+                    boxes.append(BoundBox(obj['xmin'], obj['ymin'], obj['xmax'], obj['ymax'],
+                                          classes=classes))
+                img = draw_boxes(img, boxes, self.labels, 0.)
                 x_batch[instance_count] = img
 
             # increase instance counter in the current batch

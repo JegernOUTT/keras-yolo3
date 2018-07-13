@@ -12,7 +12,7 @@ from keras.optimizers import Adam
 
 from callback import CustomModelCheckpoint, CustomTensorBoard
 from generator import BatchGenerator
-from preprocessing import TrassirAnnotations
+from preprocessing import TrassirRectShapesAnnotations
 from utils.multi_gpu_model import multi_gpu_model
 from utils.utils import normalize, evaluate
 from yolo import create_full_model, dummy_loss
@@ -157,7 +157,7 @@ def _main_(args):
     validation_datasets = [{**ds, 'path': os.path.join(config['train']['images_dir'], ds['path'])}
                            for ds in config['train']['validation_datasets']]
 
-    trassir_annotation = TrassirAnnotations(train_datasets, validation_datasets)
+    trassir_annotation = TrassirRectShapesAnnotations(train_datasets, validation_datasets)
     trassir_annotation.load()
     trassir_annotation.print_statistics()
     train = trassir_annotation.get_train_instances(config['model']['labels'],

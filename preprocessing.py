@@ -3,13 +3,15 @@ import os
 import pickle
 import logging
 import random
+from operator import itemgetter
+
 import numpy as np
 
 from copy import deepcopy
 from tqdm import tqdm
 
 
-class TrassirAnnotations:
+class TrassirRectShapesAnnotations:
     ANNOTATION_VERSION = '1.1'
     ANNOTATIONS_FILENAMES = [('annotations.pickle', pickle), ('annotations.json', json)]
     ANNOTATION_TYPE = 'RectShape'
@@ -74,7 +76,7 @@ class TrassirAnnotations:
                 images = self._filter_by_verifiers(verifiers if verifiers != 'any' else None, images)
             if folder['images_count'] != "all":
                 random.shuffle(images)
-                images = images[:folder['images_count']]
+                images = images[:int(folder['images_count'])]
 
             for image in images:
                 annotations = image['annotations']
@@ -97,7 +99,7 @@ class TrassirAnnotations:
                 images = self._filter_by_verifiers(verifiers if verifiers != 'any' else None, images)
             if folder['images_count'] != "all":
                 random.shuffle(images)
-                images = images[:folder['images_count']]
+                images = images[:int(folder['images_count'])]
 
             for image in images:
                 annotations = image['annotations']
@@ -133,6 +135,7 @@ class TrassirAnnotations:
         self._validation_folders = validation_folders
 
     def _search_folders_recursively(self):
+        annotation_filenames = list(map(itemgetter(0), TrassirRectShapesAnnotations.ANNOTATIONS_FILENAMES))
         train_folders = []
         for folder in self._train_folders:
             if not folder['recursive']:
@@ -140,7 +143,7 @@ class TrassirAnnotations:
             else:
                 folder_ops = deepcopy(folder)
                 for cwd, folders, files in os.walk(folder['path']):
-                    if 'annotations.pickle' in files or 'annotations.json' in files:
+                    if any([ann_filename in files for ann_filename in annotation_filenames]):
                         folder_ops['path'] = cwd
                         train_folders.append(deepcopy(folder_ops))
         self._train_folders = train_folders
@@ -152,7 +155,7 @@ class TrassirAnnotations:
             else:
                 folder_ops = deepcopy(folder)
                 for cwd, folders, files in os.walk(folder['path']):
-                    if 'annotations.pickle' in files or 'annotations.json' in files:
+                    if any([ann_filename in files for ann_filename in annotation_filenames]):
                         folder_ops['path'] = cwd
                         validation_folders.append(deepcopy(folder_ops))
         self._validation_folders = validation_folders
@@ -197,7 +200,7 @@ class TrassirAnnotations:
     @staticmethod
     def _annotation_converter(annotation):
         annotation = deepcopy(annotation)
-        assert annotation['shape_type'] == TrassirAnnotations.ANNOTATION_TYPE
+        assert annotation['shape_type'] == TrassirRectShapesAnnotations.ANNOTATION_TYPE
         del annotation['shape_type']
         del annotation['time_code']
         annotation['bbox'] = np.array(annotation['bbox'], dtype=np.float32)
@@ -209,12 +212,12 @@ class TrassirAnnotations:
             return None
 
         if all([not os.path.isfile(os.path.join(path, ann_filename))
-                for ann_filename, _ in TrassirAnnotations.ANNOTATIONS_FILENAMES]):
+                for ann_filename, _ in TrassirRectShapesAnnotations.ANNOTATIONS_FILENAMES]):
             logging.error('There is no annotation file in given path: {}'.format(path))
             return None
 
         annotations = None
-        for ann_filename, module in TrassirAnnotations.ANNOTATIONS_FILENAMES:
+        for ann_filename, module in TrassirRectShapesAnnotations.ANNOTATIONS_FILENAMES:
             if os.path.isfile(os.path.join(path, ann_filename)):
                 with open(os.path.join(path, ann_filename), 'rb') as f:
                     annotations = module.load(f)
@@ -225,9 +228,9 @@ class TrassirAnnotations:
             logging.error('Annotation file structure is invalid: {}'.format(path))
             return None
 
-        if annotations['info']['version'] != TrassirAnnotations.ANNOTATION_VERSION:
+        if annotations['info']['version'] != TrassirRectShapesAnnotations.ANNOTATION_VERSION:
             logging.error('Annotation versions mismatch for {}: {} is required, {} is given'.format(
-                path, TrassirAnnotations.ANNOTATION_VERSION, annotations['info']['version']))
+                path, TrassirRectShapesAnnotations.ANNOTATION_VERSION, annotations['info']['version']))
             return None
 
         images_by_id = {image_info['id']: {**image_info,
@@ -236,7 +239,7 @@ class TrassirAnnotations:
                         for image_info in annotations['images']}
         categories_by_id = {cat_info['id']: cat_info for cat_info in annotations['categories']}
 
-        for ann in filter(lambda x: x['shape_type'] == TrassirAnnotations.ANNOTATION_TYPE, annotations['annotations']):
+        for ann in filter(lambda x: x['shape_type'] == TrassirRectShapesAnnotations.ANNOTATION_TYPE, annotations['annotations']):
             ann = self._annotation_converter(ann)
             ann['category_name'] = categories_by_id[ann['category_id']]['name']
             del ann['category_id']
