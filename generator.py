@@ -199,13 +199,9 @@ class BatchGenerator(Sequence):
         image = cv2.resize(image, (new_w, new_h), interpolation=random.choice(methods)[1])
         image = apply_random_scale_and_crop(image, new_w, new_h, net_w, net_h, dx, dy)
 
-        # gray = np.random.randint(2)
-        # if gray:
-        #     image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-
         # randomly distort hsv space
-        if not np.isclose(self.jitter, 0.0):
-            image = random_distort_image(image)
+        # if not np.isclose(self.jitter, 0.0):
+        #     image = random_distort_image(image)
 
         # randomly flip
         flip = np.random.randint(2) if not np.isclose(self.jitter, 0.0) else 0

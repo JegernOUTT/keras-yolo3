@@ -62,7 +62,7 @@ def create_callbacks(config, infer_model, validation_generator):
         write_images=True)
 
     reduce_lrt = LearningRateScheduler(
-        lambda x: config['train']['learning_rate'] if x < 30 else config['train']['learning_rate'] * 0.1)
+        lambda x: config['train']['learning_rate'] if x < 100 else config['train']['learning_rate'] * 0.1)
 
     return [
         checkpoint_weights,
@@ -183,7 +183,7 @@ def _main_(args):
         min_net_size=config['model']['min_input_size'],
         max_net_size=config['model']['max_input_size'],
         shuffle=True,
-        jitter=0.1,
+        jitter=0.0,
         norm=normalize
     )
 

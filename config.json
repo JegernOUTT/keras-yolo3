@@ -1,9 +1,9 @@
 {
   "model": {
-    "type": "tiny_yolo3",
-    "need_to_freeze_base": true,
+    "type": "yolo3",
+    "need_to_freeze_base": false,
     "min_input_size": 416,
-    "max_input_size": 608,
+    "max_input_size": 808,
     "anchors": [10,37, 17,71, 28,104, 28,50, 42,79, 45,148, 70,92, 77,181, 193,310],
     "tiny_anchors": [10,14, 23,27, 37,58, 81,82, 135,169, 344,319],
     "max_box_per_image": 100,
@@ -17,43 +17,43 @@
     "train_datasets": [
       {
         "path": "foreign_datasets/crowd_human/CrowdHuman_train/Images",
-        "images_count": "all",
+        "images_count": 0,
         "only_verified": false,
         "bbox_limits": [20, 20, "inf", "inf"],
         "recursive": false
       },
       {
         "path": "negatives",
-        "images_count": 0,
+        "images_count": "all",
         "only_verified": false,
         "bbox_limits": [20, 20, "inf", "inf"],
         "recursive": true
       },
       {
         "path": "office",
-        "images_count": 0,
-        "only_verified": false,
+        "images_count": "all",
+        "only_verified": true,
         "bbox_limits": [20, 20, "inf", "inf"],
         "recursive": true
       },
       {
         "path": "other",
-        "images_count": 0,
-        "only_verified": false,
+        "images_count": "all",
+        "only_verified": true,
         "bbox_limits": [20, 20, "inf", "inf"],
         "recursive": true
       },
       {
         "path": "outdoor",
-        "images_count": 0,
-        "only_verified": false,
-        "bbox_limits": [20, 20, "inf", "inf"],
+        "images_count": "all",
+        "only_verified": true,
+        "bbox_limits": [10, 10, "inf", "inf"],
         "recursive": true
       },
       {
         "path": "shop",
-        "images_count": 0,
-        "only_verified": false,
+        "images_count": "all",
+        "only_verified": true,
         "bbox_limits": [20, 20, "inf", "inf"],
         "recursive": true
       }
@@ -75,9 +75,9 @@
       }
     ],
     "train_times": 1,
-    "batch_size": 8,
-    "learning_rate": 1e-3,
-    "nb_epochs": 100,
+    "batch_size": 4,
+    "learning_rate": 1e-4,
+    "nb_epochs": 300,
     "warmup_epochs": 0,
     "ignore_thresh": 0.5,
     "gpus": "0",
@@ -90,12 +90,12 @@
     "input_size": 608,
     "obj_thresh": 0.5,
     "nms_thresh": 0.45,
-    "gpu": "0",
+    "gpu": "1",
     "snapshots_path": "./snapshots/current_person/",
-    "input_path": "/mnt/nfs/Videos/outdoor_peoples_videos/dim_by_moscow_time/stambulskiy_park_3.ts.mp4",
+    "input_path": "/mnt/nfs/Videos/peoples_videos/romain/arabesque/ArabesqueTimisoara-1.avi",
     "process_nth_frame": 1,
     "need_to_save_output": true,
-    "output_path": "tmp.mp4",
+    "output_path": "last_predicted.mp4",
     "is_mobilenet2": false
   },
   "loss_config": {
@@ -103,7 +103,7 @@
     "yolo_loss": {
       "grid_scales": [1, 1, 1],
       "obj_scale": 5,
-      "noobj_scale": 0.5,
+      "noobj_scale": 1,
       "xywh_scale": 1,
       "class_scale": 1
     }

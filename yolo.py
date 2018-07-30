@@ -186,10 +186,10 @@ class YoloLayer(Layer):
                           4) * \
                       self.class_scale
 
-        loss_xy = tf.reduce_sum(tf.square(xy_delta), list(range(1, 5)))
-        loss_wh = tf.reduce_sum(tf.square(wh_delta), list(range(1, 5)))
-        loss_conf = tf.reduce_sum(tf.square(conf_delta), list(range(1, 5)))
-        loss_class = tf.reduce_sum(class_delta, list(range(1, 5)))
+        loss_xy = tf.reduce_mean(tf.square(xy_delta))
+        loss_wh = tf.reduce_mean(tf.square(wh_delta))
+        loss_conf = tf.reduce_mean(tf.square(conf_delta))
+        loss_class = tf.reduce_mean(class_delta)
 
         loss = loss_xy + loss_wh + loss_conf + loss_class
 
@@ -697,4 +697,4 @@ def create_full_model(
 
 
 def dummy_loss(y_true, y_pred):
-    return tf.sqrt(tf.reduce_sum(y_pred))
+    return y_pred
