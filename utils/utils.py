@@ -6,6 +6,9 @@ import tqdm
 
 import cv2
 import numpy as np
+from keras import Model
+
+from yolo import RegressionLayer
 from .bbox import BoundBox, bbox_iou
 
 
@@ -39,8 +42,7 @@ def evaluate(model,
         if i + batch_size > generator.size():
             batch_size = generator.size() - i
         raw_images = np.array([generator.load_image(j) for j in range(i, i + batch_size)])
-        pred_boxes = get_yolo_boxes_batch(model, raw_images, net_h, net_w,
-                                          generator.get_anchors(), obj_thresh, nms_thresh)
+        pred_boxes = get_yolo_boxes_batch(model, raw_images, net_h, net_w, obj_thresh, nms_thresh)
         # pred_boxes = [[box for box in pred if box.get_score() > obj_thresh] for pred in pred_boxes]
 
         for shifted_i in range(i, i + batch_size):
@@ -186,47 +188,6 @@ def do_nms(boxes, nms_thresh):
                     boxes[index_j].classes[c] = 0
 
  
-def decode_netout(netout, anchors, obj_thresh, net_h, net_w):
-    grid_h, grid_w = netout.shape[:2]
-    nb_box = 3
-    netout = netout.reshape((grid_h, grid_w, nb_box, -1))
-
-    boxes = []
-
-    netout[..., :2] = _sigmoid(netout[..., :2])
-    netout[..., 4:] = _sigmoid(netout[..., 4:])
-    netout[..., 5:] = netout[..., 4][..., np.newaxis] * netout[..., 5:]
-    netout[..., 5:] *= netout[..., 5:] > obj_thresh
-
-    for i in range(grid_h * grid_w):
-        row = i // grid_w
-        col = i % grid_w
-
-        for b in range(nb_box):
-            # 4th element is objectness score
-            objectness = netout[row, col, b, 4]
-
-            if objectness <= obj_thresh:
-                continue
-
-            # first 4 elements are x, y, w, and h
-            x, y, w, h = netout[row, col, b, :4]
-
-            x = (col + x) / grid_w  # center position, unit: image width
-            y = (row + y) / grid_h  # center position, unit: image height
-            w = anchors[2 * b + 0] * np.exp(w) / net_w  # unit: image width
-            h = anchors[2 * b + 1] * np.exp(h) / net_h  # unit: image height
-
-            # last elements are class probabilities
-            classes = netout[row, col, b, 5:]
-
-            box = BoundBox(x - w / 2, y - h / 2, x + w / 2, y + h / 2, objectness, classes)
-
-            boxes.append(box)
-
-    return boxes
-
-
 def preprocess_input(image, net_h, net_w):
     new_h, new_w, _ = image.shape
 
@@ -277,24 +238,37 @@ def normalize(image):
     return image / 255.
 
 
-def get_yolo_boxes(model, image, net_h, net_w, anchors, obj_thresh, nms_thresh):
+def add_regression_layer_if_not_exists(model, anchors):
+    if model.output_names[0] == 'regression_layer_1':
+        return model
+
+    regression = RegressionLayer(anchors)([model.input, *model.output])
+    return Model(model.input, regression)
+
+
+def decode_netout(output, obj_thresh):
+    output = output.squeeze(0)
+    boxes = []
+    for i in range(len(output)):
+        prediction = output[i]
+
+        if prediction[4] <= obj_thresh:
+            continue
+
+        (x, y, w, h, obj), classes = prediction[:5], prediction[5:]
+        box = BoundBox(x - w / 2, y - h / 2, x + w / 2, y + h / 2, obj, classes)
+        boxes.append(box)
+    return boxes
+
+
+def get_yolo_boxes(model, image, net_h, net_w, obj_thresh, nms_thresh):
     # preprocess the input
     image_h, image_w, _ = image.shape
     new_image = preprocess_input(image, net_h, net_w)
 
     # run the prediction
     yolos = model.predict(new_image)
-    boxes = []
-
-    for i in range(len(yolos)):
-        # decode the output of the network
-        yolo_anchors = []
-        if len(yolos) == 2:
-            yolo_anchors = anchors[(1 - i) * 6:(2 - i) * 6]
-        elif len(yolos) == 3:
-            yolo_anchors = anchors[(2 - i) * 6:(3 - i) * 6]
-        assert (len(yolo_anchors) == 6)
-        boxes += decode_netout(yolos[i][0], yolo_anchors, obj_thresh, net_h, net_w)
+    boxes = decode_netout(yolos, obj_thresh)
 
     # correct the sizes of the bounding boxes
     boxes = correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
@@ -305,28 +279,17 @@ def get_yolo_boxes(model, image, net_h, net_w, anchors, obj_thresh, nms_thresh):
     return boxes
 
 
-def get_yolo_boxes_batch(model, images, net_h, net_w, anchors, obj_thresh, nms_thresh):
+def get_yolo_boxes_batch(model, images, net_h, net_w, obj_thresh, nms_thresh):
     # preprocess the input
     new_images = preprocess_input_batch(images, net_h, net_w)
 
     # run the prediction
-    yolos = model.predict(new_images)
+    output = model.predict(new_images)
 
     batch_boxes = []
     for batch_i in range(len(images)):
-        boxes = []
         image_h, image_w, _ = images[batch_i].shape
-
-        for i in range(len(yolos)):
-            # decode the output of the network
-            yolo_anchors = []
-            if len(yolos) == 2:
-                yolo_anchors = anchors[(1 - i) * 6:(2 - i) * 6]
-            elif len(yolos) == 3:
-                yolo_anchors = anchors[(2 - i) * 6:(3 - i) * 6]
-            assert(len(yolo_anchors) == 6)
-            boxes += decode_netout(yolos[i][batch_i], yolo_anchors, obj_thresh, net_h, net_w)
-
+        boxes = decode_netout(output[batch_i][np.newaxis, ...], obj_thresh)
         boxes = correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
         do_nms(boxes, nms_thresh)
 

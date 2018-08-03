@@ -11,9 +11,11 @@ from keras_applications.mobilenet_v2 import relu6
 from scipy.misc import imresize
 
 import masknet
-from utils.utils import preprocess_input, decode_netout, correct_yolo_boxes, do_nms
+from utils.utils import preprocess_input, decode_netout, correct_yolo_boxes, do_nms, add_regression_layer_if_not_exists
 from utils.bbox import draw_boxes
 from keras.models import load_model
+
+from yolo import RegressionLayer
 
 model_name = '{}_model.h5'
 masknet_model_name = '{}_masknet_model.h5'
@@ -33,15 +35,10 @@ def get_yolo3_output(model, image, net_h, net_w, anchors, obj_thresh, nms_thresh
 
     layer_outs = functor([new_image])
 
-    masknet_output, yolos = layer_outs[:4], layer_outs[4:]
+    masknet_output, output = layer_outs[:4], layer_outs[4:]
 
     # Get boxes from yolo prediction
-    boxes = []
-    for i in range(len(yolos)):
-        # decode the output of the network
-        yolo_anchors = anchors[(2 - i) * 6:(3 - i) * 6]  # config['model']['anchors']
-        boxes += decode_netout(yolos[i][0], yolo_anchors, obj_thresh, net_h, net_w)
-
+    boxes = decode_netout(output, obj_thresh)
     do_nms(boxes, nms_thresh)
 
     return boxes, masknet_output
@@ -71,10 +68,12 @@ def _main_(args):
     if not os.path.exists(input_path):
         raise FileNotFoundError(input_path)
 
-    custom_objects = {}
-    if infer_config['is_mobilenet2']:
+    custom_objects = {'RegressionLayer': RegressionLayer}
+    if config['inference']['is_mobilenet2']:
         custom_objects = {'relu6': relu6}
     infer_model = load_model(snapshot_name, custom_objects=custom_objects)
+    infer_model = add_regression_layer_if_not_exists(infer_model, model_config['anchors'])
+    infer_model.summary()
 
     C2 = infer_model.get_layer('leaky_10').output
     C3 = infer_model.get_layer('leaky_35').output

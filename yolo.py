@@ -6,8 +6,96 @@ from keras.models import Model
 from keras.engine.topology import Layer
 import keras.backend as K
 import tensorflow as tf
-import numpy as np
 from keras.regularizers import l2
+from functools import reduce
+import operator
+import numpy as np
+
+
+class RegressionLayer(Layer):
+    def __init__(self, anchors=[], **kwargs):
+        self.anchors_list = anchors if type(anchors) is list else anchors.tolist()
+        self.anchors = K.variable(anchors, dtype=K.floatx(), name='anchors')
+        super(RegressionLayer, self).__init__(**kwargs)
+        
+    def set_anchors(self, anchors):
+        self.anchors = K.variable(anchors, dtype=K.floatx(), name='anchors')
+
+    def build(self, input_shape):
+        super(RegressionLayer, self).build(input_shape)
+
+    def call(self, x):
+        input, output_layers = x[0], x[2:]
+
+        net_h, net_w = K.shape(input)[1], K.shape(input)[2]
+        net_factor = K.reshape(K.cast([net_w, net_h], dtype=K.floatx()), [1, 1, 1, 1, 2])
+
+        batch_size = K.shape(output_layers[0])[0]
+        last_dim = K.shape(output_layers[0])[3] // 3
+
+        result = None
+        for i in range(len(output_layers)):
+            max_net_h, max_net_w = net_h * (2 ** i), net_w * (2 ** i)
+
+            cell_x = K.cast(K.reshape(
+                K.tile(tf.range(max_net_w), [max_net_h]), (1, max_net_h, max_net_w, 1, 1)), dtype=K.floatx())
+            cell_y = tf.transpose(cell_x, (0, 2, 1, 3, 4))
+            cell_grid = K.cast(K.tile(K.concatenate([cell_x, cell_y], -1), [batch_size, 1, 1, 3, 1]),
+                               dtype=K.floatx())
+
+            current_anchors = self.anchors[(len(output_layers) - i - 1) * 6: (len(output_layers) - i) * 6]
+            current_anchors = K.reshape(current_anchors, [1, 1, 1, 3, 2])
+
+            current_pred = K.reshape(output_layers[i],
+                                     tf.concat([tf.shape(output_layers[i])[:3], tf.constant([3, -1])], axis=0))
+
+            pred_box_conf = K.expand_dims(tf.sigmoid(current_pred[..., 4]), 4)
+            pred_box_class = current_pred[..., 5:]
+
+            grid_h, grid_w = K.shape(current_pred)[1], K.shape(current_pred)[2]
+            grid_factor = K.reshape(K.cast([grid_w, grid_h], dtype=K.floatx()), [1, 1, 1, 1, 2])
+
+            pred_box_xy = (cell_grid[:, :grid_h, :grid_w, :, :] + tf.sigmoid(current_pred[..., :2]))
+            pred_xy = K.expand_dims(pred_box_xy / grid_factor, 4)
+            pred_xy = K.reshape(pred_xy, [batch_size, grid_h, grid_w, 3, 2])
+
+            pred_box_wh = current_pred[..., 2:4]
+            pred_wh = K.expand_dims(tf.exp(pred_box_wh) * current_anchors / net_factor, 4)
+            pred_wh = K.reshape(pred_wh, [batch_size, grid_h, grid_w, 3, 2])
+
+            if result is None:
+                current_result = K.concatenate([pred_xy, pred_wh, pred_box_conf, pred_box_class], axis=4)
+                current_result_shape = K.shape(current_result)
+                current_result = K.reshape(current_result,
+                                           [batch_size,
+                                            grid_h * grid_w * current_result_shape[3],
+                                            last_dim])
+                result = current_result
+
+            else:
+                current_result = K.concatenate([pred_xy, pred_wh, pred_box_conf, pred_box_class], axis=4)
+                current_result_shape = K.shape(current_result)
+                current_result = K.reshape(current_result,
+                                           [batch_size,
+                                            grid_h * grid_w * current_result_shape[3],
+                                            last_dim])
+                result = K.concatenate([result, current_result], axis=1)
+
+        result = K.identity(result, name='output')
+        return result
+
+    def compute_output_shape(self, input_shape):
+        if input_shape[0][1] is not None:
+            second_dim = reduce(operator.add, [reduce(operator.mul, [*i[1:3], 3], 1) for i in input_shape])
+        else:
+            second_dim = None
+
+        return input_shape[0][0], second_dim, input_shape[0][3] // 3
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({'anchors': self.anchors_list})
+        return config
 
 
 class YoloLayer(Layer):
@@ -488,7 +576,7 @@ def _make_yolo3_model(
         'losses': [loss_yolo_1, loss_yolo_2, loss_yolo_3],
         'train_model': Model([input, true_boxes, true_yolo_1, true_yolo_2, true_yolo_3],
                              [loss_yolo_1, loss_yolo_2, loss_yolo_3]),
-        'infer_model': Model(input, [pred_yolo_1, pred_yolo_2, pred_yolo_3])
+        'infer_model': Model(input, RegressionLayer(anchors)([input, pred_yolo_1, pred_yolo_2, pred_yolo_3]))
     }
 
 
@@ -586,7 +674,7 @@ def _make_yolo3_tiny_model(
         'losses': [loss_yolo_1, loss_yolo_2],
         'train_model': Model([input, true_boxes, true_yolo_1, true_yolo_2],
                              [loss_yolo_1, loss_yolo_2]),
-        'infer_model': Model(input, [pred_yolo_1, pred_yolo_2])
+        'infer_model': Model(input, RegressionLayer(anchors)([input, pred_yolo_1, pred_yolo_2]))
     }
 
 
@@ -653,7 +741,7 @@ def _make_mobilenet_v2_model(
         'losses': [loss_yolo_1, loss_yolo_2],
         'train_model': Model([input, true_boxes, true_yolo_1, true_yolo_2],
                              [loss_yolo_1, loss_yolo_2]),
-        'infer_model': Model(input, [pred_yolo_1, pred_yolo_2])
+        'infer_model': Model(input, RegressionLayer(anchors)([input, pred_yolo_1, pred_yolo_2]))
     }
 
 

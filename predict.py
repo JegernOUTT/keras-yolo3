@@ -7,12 +7,18 @@ import cv2
 import keras
 from keras_applications.mobilenet_v2 import relu6
 
-from utils.utils import get_yolo_boxes
+from utils.utils import get_yolo_boxes, add_regression_layer_if_not_exists
 from utils.bbox import draw_boxes
 from keras.models import load_model
 
+from yolo import RegressionLayer
+
 model_name = '{}_model.h5'
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+
+
+def is_tiny_model(model_name):
+    return model_name in ['tiny_yolo3', 'mobilenet2']
 
 
 def _main_(args):
@@ -25,7 +31,9 @@ def _main_(args):
         config = config['inference']
 
     os.environ['CUDA_VISIBLE_DEVICES'] = config['gpu']
+    is_tiny = is_tiny_model(model_config['type'])
     net_size = config['input_size']
+    anchors = model_config['anchors'] if not is_tiny else model_config['tiny_anchors']
     obj_thresh, nms_thresh = config['obj_thresh'], config['nms_thresh']
     snapshot_name = os.path.join(config["snapshots_path"], model_name.format(model_config['type']))
     input_path = config["input_path"]
@@ -37,10 +45,11 @@ def _main_(args):
     if not os.path.exists(input_path):
         raise FileNotFoundError(input_path)
 
-    custom_objects = {}
+    custom_objects = {'RegressionLayer': RegressionLayer}
     if config['is_mobilenet2']:
         custom_objects = {'relu6': relu6}
     infer_model = load_model(snapshot_name, custom_objects=custom_objects)
+    infer_model = add_regression_layer_if_not_exists(infer_model, anchors)
 
     video_reader = cv2.VideoCapture(input_path)
 
@@ -62,8 +71,7 @@ def _main_(args):
         if frames_processed % every_nth != 0:
             continue
 
-        boxes = get_yolo_boxes(infer_model, image, net_size, net_size,
-                               model_config['anchors'], obj_thresh, nms_thresh)
+        boxes = get_yolo_boxes(infer_model, image, net_size, net_size, obj_thresh, nms_thresh)
         image = draw_boxes(image, boxes, model_config['labels'], obj_thresh)
 
         if config['need_to_save_output']:

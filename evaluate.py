@@ -9,7 +9,8 @@ from keras_applications.mobilenet_v2 import relu6
 
 from generator import BatchGenerator
 from preprocessing import TrassirRectShapesAnnotations
-from utils.utils import normalize, evaluate
+from utils.utils import normalize, evaluate, add_regression_layer_if_not_exists
+from yolo import RegressionLayer
 
 model_name = '{}_model.h5'
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -58,10 +59,11 @@ def _main_(args):
         norm=normalize
     )
 
-    custom_objects = {}
-    if config['is_mobilenet2']:
+    custom_objects = {'RegressionLayer': RegressionLayer}
+    if config['inference']['is_mobilenet2']:
         custom_objects = {'relu6': relu6}
     infer_model = load_model(snapshot_name, custom_objects=custom_objects)
+    infer_model = add_regression_layer_if_not_exists(infer_model, anchors)
 
     recalls, average_precisions = evaluate(infer_model, valid_generator)
 

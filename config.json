@@ -3,13 +3,13 @@
     "type": "yolo3",
     "need_to_freeze_base": false,
     "min_input_size": 416,
-    "max_input_size": 808,
+    "max_input_size": 608,
     "anchors": [10,37, 17,71, 28,104, 28,50, 42,79, 45,148, 70,92, 77,181, 193,310],
     "tiny_anchors": [10,14, 23,27, 37,58, 81,82, 135,169, 344,319],
     "max_box_per_image": 100,
     "model_scale_coefficient": 1,
     "labels": [
-      "person"
+      "person", "head"
     ]
   },
   "train": {
@@ -17,54 +17,54 @@
     "train_datasets": [
       {
         "path": "foreign_datasets/crowd_human/CrowdHuman_train/Images",
-        "images_count": 0,
+        "images_count": "all",
         "only_verified": false,
-        "bbox_limits": [20, 20, "inf", "inf"],
-        "recursive": false
+        "bbox_limits": [5, 5, "inf", "inf"],
+        "recursive": true
       },
       {
         "path": "negatives",
-        "images_count": "all",
+        "images_count": "0",
         "only_verified": false,
-        "bbox_limits": [20, 20, "inf", "inf"],
+        "bbox_limits": [5, 5, "inf", "inf"],
         "recursive": true
       },
       {
         "path": "office",
-        "images_count": "all",
+        "images_count": "0",
         "only_verified": true,
-        "bbox_limits": [20, 20, "inf", "inf"],
+        "bbox_limits": [5, 5, "inf", "inf"],
         "recursive": true
       },
       {
         "path": "other",
-        "images_count": "all",
+        "images_count": "0",
         "only_verified": true,
-        "bbox_limits": [20, 20, "inf", "inf"],
+        "bbox_limits": [5, 5, "inf", "inf"],
         "recursive": true
       },
       {
         "path": "outdoor",
-        "images_count": "all",
+        "images_count": "0",
         "only_verified": true,
-        "bbox_limits": [10, 10, "inf", "inf"],
+        "bbox_limits": [5, 5, "inf", "inf"],
         "recursive": true
       },
       {
         "path": "shop",
-        "images_count": "all",
+        "images_count": "0",
         "only_verified": true,
-        "bbox_limits": [20, 20, "inf", "inf"],
+        "bbox_limits": [5, 5, "inf", "inf"],
         "recursive": true
       }
     ],
     "validation_datasets": [
       {
         "path": "foreign_datasets/crowd_human/CrowdHuman_val/Images",
-        "images_count": 0,
+        "images_count": "500",
         "only_verified": false,
-        "bbox_limits": [10, 10, "inf", "inf"],
-        "recursive": false
+        "bbox_limits": [5, 5, "inf", "inf"],
+        "recursive": true
       },
       {
         "path": "validation",
@@ -79,11 +79,11 @@
     "learning_rate": 1e-4,
     "nb_epochs": 300,
     "warmup_epochs": 0,
-    "ignore_thresh": 0.5,
+    "ignore_thresh": 0.7,
     "gpus": "0",
-    "verifiers": ["sergey"],
-    "log_prefix": "person",
-    "snapshots_path": "./snapshots/current_person/",
+    "verifiers": ["sergey_head"],
+    "log_prefix": "person_head",
+    "snapshots_path": "./snapshots/person_heads/",
     "debug": true
   },
   "inference": {
@@ -91,8 +91,8 @@
     "obj_thresh": 0.5,
     "nms_thresh": 0.45,
     "gpu": "1",
-    "snapshots_path": "./snapshots/current_person/",
-    "input_path": "/mnt/nfs/Videos/peoples_videos/romain/arabesque/ArabesqueTimisoara-1.avi",
+    "snapshots_path": "./snapshots/person_heads/",
+    "input_path": "/mnt/nfs/Videos/peoples_videos/outdoor/bright_by_moscow_time/gorodskoy_sad.ts.mp4",
     "process_nth_frame": 1,
     "need_to_save_output": true,
     "output_path": "last_predicted.mp4",
