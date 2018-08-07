@@ -8,12 +8,12 @@ import shutil
 import numpy as np
 import tensorflow as tf
 from keras.callbacks import LearningRateScheduler
+from keras.utils.training_utils import multi_gpu_model
 from keras.optimizers import Adam
 
 from callback import CustomModelCheckpoint, CustomTensorBoard
 from generator import BatchGenerator
 from preprocessing import TrassirRectShapesAnnotations
-from utils.multi_gpu_model import multi_gpu_model
 from utils.utils import normalize, evaluate
 from yolo import create_full_model, dummy_loss
 
@@ -245,6 +245,7 @@ def _main_(args):
         validation_steps=len(valid_generator),
         callbacks=callbacks,
         workers=4,
+        use_multiprocessing=True,
         max_queue_size=16
     )
 

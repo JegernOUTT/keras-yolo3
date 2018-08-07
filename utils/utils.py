@@ -20,7 +20,7 @@ def evaluate(model,
              generator,
              iou_threshold=0.5,
              obj_thresh=0.5,
-             nms_thresh=0.3,
+             nms_thresh=0.4,
              net_h=608,
              net_w=608,
              batch_size=32):
@@ -43,7 +43,7 @@ def evaluate(model,
             batch_size = generator.size() - i
         raw_images = np.array([generator.load_image(j) for j in range(i, i + batch_size)])
         pred_boxes = get_yolo_boxes_batch(model, raw_images, net_h, net_w, obj_thresh, nms_thresh)
-        # pred_boxes = [[box for box in pred if box.get_score() > obj_thresh] for pred in pred_boxes]
+        pred_boxes = [[box for box in pred if box.get_score() > obj_thresh] for pred in pred_boxes]
 
         for shifted_i in range(i, i + batch_size):
             score = np.array([box.get_score() for box in pred_boxes[shifted_i - i]])
