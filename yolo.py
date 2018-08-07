@@ -25,7 +25,7 @@ class RegressionLayer(Layer):
         super(RegressionLayer, self).build(input_shape)
 
     def call(self, x):
-        input, output_layers = x[0], x[2:]
+        input, output_layers = x[0], x[1:]
 
         net_h, net_w = K.shape(input)[1], K.shape(input)[2]
         net_factor = K.reshape(K.cast([net_w, net_h], dtype=K.floatx()), [1, 1, 1, 1, 2])

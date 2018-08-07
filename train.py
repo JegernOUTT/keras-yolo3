@@ -88,38 +88,20 @@ def create_model(
         model_scale_coefficient,
         debug_loss
 ):
-    if multi_gpu > 1:
-        with tf.device('/cpu:0'):
-            train_model, infer_model = create_full_model(
-                model_type=model_type,
-                freeze_base_model=freeze_base_model,
-                nb_class=nb_class,
-                anchors=anchors,
-                max_box_per_image=max_box_per_image,
-                max_grid=max_grid,
-                batch_size=batch_size // multi_gpu,
-                warmup_batches=warmup_batches,
-                ignore_thresh=ignore_thresh,
-                yolo_loss_options=yolo_loss_options,
-                model_scale_coefficient=model_scale_coefficient,
-                debug_loss=debug_loss
-            )
-    else:
-        train_model, infer_model = create_full_model(
-            model_type=model_type,
-            freeze_base_model=freeze_base_model,
-            nb_class=nb_class,
-            anchors=anchors,
-            max_box_per_image=max_box_per_image,
-            max_grid=max_grid,
-            batch_size=batch_size // multi_gpu,
-            warmup_batches=warmup_batches,
-            ignore_thresh=ignore_thresh,
-            yolo_loss_options=yolo_loss_options,
-            model_scale_coefficient=model_scale_coefficient,
-            debug_loss=debug_loss
-        )
-
+    train_model, infer_model = create_full_model(
+        model_type=model_type,
+        freeze_base_model=freeze_base_model,
+        nb_class=nb_class,
+        anchors=anchors,
+        max_box_per_image=max_box_per_image,
+        max_grid=max_grid,
+        batch_size=batch_size // multi_gpu,
+        warmup_batches=warmup_batches,
+        ignore_thresh=ignore_thresh,
+        yolo_loss_options=yolo_loss_options,
+        model_scale_coefficient=model_scale_coefficient,
+        debug_loss=debug_loss
+    )
     train_model.summary()
 
     if os.path.exists(saved_weights_name):
@@ -245,7 +227,6 @@ def _main_(args):
         validation_steps=len(valid_generator),
         callbacks=callbacks,
         workers=4,
-        use_multiprocessing=True,
         max_queue_size=16
     )
 
