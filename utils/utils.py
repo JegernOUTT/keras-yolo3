@@ -18,12 +18,12 @@ def _sigmoid(x):
 
 def evaluate(model,
              generator,
-             iou_threshold=0.5,
+             iou_threshold=0.2,
              obj_thresh=0.5,
-             nms_thresh=0.4,
+             nms_thresh=0.3,
              net_h=608,
              net_w=608,
-             batch_size=32):
+             batch_size=1):
     """ Evaluate a given dataset using a given model.
     code originally from https://github.com/fizyr/keras-retinanet
     # Arguments
@@ -43,15 +43,15 @@ def evaluate(model,
             batch_size = generator.size() - i
         raw_images = np.array([generator.load_image(j) for j in range(i, i + batch_size)])
         pred_boxes = get_yolo_boxes_batch(model, raw_images, net_h, net_w, obj_thresh, nms_thresh)
-        pred_boxes = [[box for box in pred if box.get_score() > obj_thresh] for pred in pred_boxes]
 
         for shifted_i in range(i, i + batch_size):
             score = np.array([box.get_score() for box in pred_boxes[shifted_i - i]])
             pred_labels = np.array([box.label for box in pred_boxes[shifted_i - i]])
 
             if len(pred_boxes[shifted_i - i]) > 0:
-                current_pred_boxes = np.array([[int(box.xmin), int(box.ymin), int(box.xmax), int(box.ymax), box.get_score()]
-                                               for box in pred_boxes[shifted_i - i]])
+                current_pred_boxes = np.array(
+                    [[int(box.xmin), int(box.ymin), int(box.xmax), int(box.ymax), box.get_score()]
+                     for box in pred_boxes[shifted_i - i]])
             else:
                 current_pred_boxes = np.array([[]])
 
@@ -187,7 +187,7 @@ def do_nms(boxes, nms_thresh):
                 if bbox_iou(boxes[index_i], boxes[index_j]) >= nms_thresh:
                     boxes[index_j].classes[c] = 0
 
- 
+
 def preprocess_input(image, net_h, net_w):
     new_h, new_w, _ = image.shape
 

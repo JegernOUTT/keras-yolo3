@@ -7,13 +7,14 @@ import shutil
 
 import numpy as np
 import tensorflow as tf
+import keras.backend as K
 from keras.callbacks import LearningRateScheduler
-from keras.utils.training_utils import multi_gpu_model
 from keras.optimizers import Adam
 
 from callback import CustomModelCheckpoint, CustomTensorBoard
 from generator import BatchGenerator
 from preprocessing import TrassirRectShapesAnnotations
+from keras.utils import multi_gpu_model
 from utils.utils import normalize, evaluate
 from yolo import create_full_model, dummy_loss
 
@@ -23,7 +24,7 @@ model_filename = '{}_model.h5'
 weights_filename = '{}_weights.h5'
 
 
-def create_callbacks(config, infer_model, validation_generator):
+def create_callbacks(config, infer_model, validation_generator, hvd=None):
     global logs_dir, model_filename, weights_filename
 
     logdir_prefix = config['train']['log_prefix']
@@ -39,7 +40,7 @@ def create_callbacks(config, infer_model, validation_generator):
         filepath=os.path.join(config['train']['snapshots_path'], weights_filename.format(model_type)),
         monitor=monitor_metric,
         verbose=1,
-        save_best_only=True,
+        save_best_only=False,
         save_weights_only=True,
         mode=metric_mode,
         period=1)
@@ -49,7 +50,7 @@ def create_callbacks(config, infer_model, validation_generator):
         filepath=os.path.join(config['train']['snapshots_path'], model_filename.format(model_type)),
         monitor=monitor_metric,
         verbose=1,
-        save_best_only=True,
+        save_best_only=False,
         save_weights_only=False,
         mode=metric_mode,
         period=1)
@@ -62,14 +63,24 @@ def create_callbacks(config, infer_model, validation_generator):
         write_images=True)
 
     reduce_lrt = LearningRateScheduler(
-        lambda x: config['train']['learning_rate'] if x < 100 else config['train']['learning_rate'] * 0.1)
+        lambda x: config['train']['learning_rate'] if x < 20 else config['train']['learning_rate'] * 0.1)
 
-    return [
-        checkpoint_weights,
-        checkpoint_model,
+    callbacks = [
         tensorboard_map,
         reduce_lrt,
     ]
+
+    if hvd:
+        callbacks += [
+            hvd.callbacks.BroadcastGlobalVariablesCallback(0),
+        ]
+    if not hvd or hvd.rank() == 0:
+        callbacks += [
+            checkpoint_weights,
+            checkpoint_model,
+        ]
+
+    return callbacks
 
 
 def create_model(
@@ -88,6 +99,7 @@ def create_model(
         model_scale_coefficient,
         debug_loss
 ):
+
     train_model, infer_model = create_full_model(
         model_type=model_type,
         freeze_base_model=freeze_base_model,
@@ -102,6 +114,7 @@ def create_model(
         model_scale_coefficient=model_scale_coefficient,
         debug_loss=debug_loss
     )
+
     train_model.summary()
 
     if os.path.exists(saved_weights_name):
@@ -139,15 +152,30 @@ def _main_(args):
     validation_datasets = [{**ds, 'path': os.path.join(config['train']['images_dir'], ds['path'])}
                            for ds in config['train']['validation_datasets']]
 
-    trassir_annotation = TrassirRectShapesAnnotations(train_datasets, validation_datasets)
+    trassir_annotation = TrassirRectShapesAnnotations(train_datasets, validation_datasets, config['model']['labels'], config['model']['skip_labels'])
     trassir_annotation.load()
     trassir_annotation.print_statistics()
-    train = trassir_annotation.get_train_instances(config['model']['labels'],
-                                                   config['train']['verifiers'],
+    train = trassir_annotation.get_train_instances(config['train']['verifiers'],
                                                    config['model']['max_box_per_image'])
-    validation = trassir_annotation.get_validation_instances(config['model']['labels'],
-                                                             config['train']['verifiers'],
+    validation = trassir_annotation.get_validation_instances(config['train']['verifiers'],
                                                              config['model']['max_box_per_image'])
+
+    if args.horovod:
+        import horovod.keras as hvd
+        hvd.init()
+
+        session_config = tf.ConfigProto()
+        session_config.gpu_options.allow_growth = False
+        session_config.gpu_options.visible_device_list = str(hvd.local_rank())
+        K.set_session(tf.Session(config=session_config))
+
+        # divide datasets
+        def divide_dataset(dataset, chunk):
+            length = len(dataset) // hvd.size()
+            return dataset[length*chunk:min(len(dataset), length*(chunk+1))]
+        chunk = hvd.local_rank()
+        train = divide_dataset(train, chunk)
+        validation = divide_dataset(validation, chunk)
 
     print('There is {} training instances'.format(len(train)))
     print('There is {} validation instances'.format(len(validation)))
@@ -166,7 +194,8 @@ def _main_(args):
         max_net_size=config['model']['max_input_size'],
         shuffle=True,
         jitter=0.0,
-        norm=normalize
+        norm=normalize,
+        advanced_aug=False
     )
 
     valid_generator = BatchGenerator(
@@ -189,8 +218,11 @@ def _main_(args):
     else:
         warmup_batches = config['train']['warmup_epochs'] * (config['train']['train_times'] * len(train_generator))
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = config['train']['gpus']
-    multi_gpu = len(config['train']['gpus'].split(','))
+    if args.horovod:
+        multi_gpu = 1
+    else:
+        os.environ['CUDA_VISIBLE_DEVICES'] = config['train']['gpus']
+        multi_gpu = len(config['train']['gpus'].split(','))
 
     train_model, infer_model = create_model(
         model_type=config['model']['type'],
@@ -213,10 +245,12 @@ def _main_(args):
     optimizer = Adam(
         lr=config['train']['learning_rate']
     )
+    if args.horovod:
+        optimizer = hvd.DistributedOptimizer(optimizer)
 
     train_model.compile(loss=dummy_loss, optimizer=optimizer)
 
-    callbacks = create_callbacks(config, infer_model, valid_generator)
+    callbacks = create_callbacks(config, infer_model, valid_generator, hvd if args.horovod else None)
 
     train_model.fit_generator(
         generator=train_generator,
@@ -247,7 +281,14 @@ if __name__ == '__main__':
     argparser.add_argument(
         '-c',
         '--conf',
+        default='config.json',
         help='path to configuration file')
+
+    argparser.add_argument('-hvd',
+        action='store_true',
+        default=False,
+        dest='horovod',
+        help='use this option for mpirun')
 
     args = argparser.parse_args()
     _main_(args)

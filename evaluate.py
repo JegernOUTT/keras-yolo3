@@ -31,16 +31,13 @@ def _main_(args):
     snapshot_name = os.path.join(config['inference']['snapshots_path'], model_name.format(config['model']['type']))
     anchors = config['model']['anchors'] if not is_tiny else config['model']['tiny_anchors']
 
-    train_datasets = [{**ds, 'path': os.path.join(config['train']['images_dir'], ds['path'])}
-                      for ds in config['train']['train_datasets']]
     validation_datasets = [{**ds, 'path': os.path.join(config['train']['images_dir'], ds['path'])}
                            for ds in config['train']['validation_datasets']]
 
-    trassir_annotation = TrassirRectShapesAnnotations(train_datasets, validation_datasets)
+    trassir_annotation = TrassirRectShapesAnnotations([], validation_datasets, config['model']['labels'], config['model']['skip_labels'])
     trassir_annotation.load()
     trassir_annotation.print_statistics()
-    validation = trassir_annotation.get_validation_instances(config['model']['labels'],
-                                                             config['train']['verifiers'],
+    validation = trassir_annotation.get_validation_instances(config['train']['verifiers'],
                                                              config['model']['max_box_per_image'])
 
     print('There is {} validation instances'.format(len(validation)))
@@ -75,7 +72,11 @@ def _main_(args):
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser(
         description='Evaluate YOLO_v3 model on any dataset')
-    argparser.add_argument('-c', '--conf', help='path to configuration file')
+    argparser.add_argument(
+    	'-c',
+    	'--conf',
+    	default='config.json',
+    	help='path to configuration file')
 
     args = argparser.parse_args()
     _main_(args)

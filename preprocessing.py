@@ -16,58 +16,57 @@ class TrassirRectShapesAnnotations:
     ANNOTATIONS_FILENAMES = [('annotations.pickle', pickle), ('annotations.json', json)]
     ANNOTATION_TYPE = 'RectShape'
 
-    def __init__(self, train_folders, validation_folders):
+    def __init__(self, train_folders, validation_folders, categories, skip_categories):
         self._train_folders = train_folders
         self._validation_folders = validation_folders
 
         self._common_image_id = 0
         self._train_index = None
         self._validation_index = None
-        self._categories = None
         self._verifiers = None
+
+        self._categories = categories + skip_categories
+        self._skip_categories = skip_categories
 
         # Extra indexes
         self._images_by_id_index = None
-        self._categories_by_id_index = None
-        self._categories_by_name_index = None
 
     def load(self):
         logging.info('Starting folders loading')
         self._load_all_folders()
-        logging.info('All folders was loaded. Starting categories loading')
-        self._retrieve_categories()
         logging.info('Categories was loaded. Retrieving verifiers')
         self._retrieve_verifiers()
         logging.info('Loading of annotations competed. Building indexes')
         self._build_extra_indexes()
 
+        self._train_index = self._cleanup_by_categories(self._train_index, self._categories)
+        self._validation_index = self._cleanup_by_categories(self._validation_index, self._categories)
+
     def print_statistics(self):
-        if self._images_by_id_index is None or self._categories_by_id_index is None \
-                or self._categories_by_name_index is None:
+        if self._images_by_id_index is None:
             logging.error('Before statistic retrieving you must to build index')
             return
 
         print('In training set {} images'.format(len(self._train_index)))
         print('In validation set {} images'.format(len(self._validation_index)))
 
-        common_index = self._train_index + self._validation_index
-
         print('\nCategories:')
-        for category in self._categories:
-            print('[{}]: {}'.format(category['id'], category['name']))
+        for ind, category in enumerate(self._categories):
+            print('[{}]: {}'.format(ind, category))
         print('\nVerifiers:')
         for verifier, ids in self._verifiers.items():
             print('{}: {} images verified'.format(verifier, len(ids)))
 
         print('\nDetailed categories statistic:')
-        categories_statistic = {c['id']: 0 for c in self._categories}
+        categories_statistic = {c: 0 for c in self._categories}
+        common_index = self._train_index + self._validation_index
         for image in common_index:
             for ann in image['annotations']:
-                categories_statistic[ann['category_id']] += 1
-        for i, count in categories_statistic.items():
-            print('[{}]: {} annotations'.format(self._categories_by_id_index[i]['name'], count))
+                categories_statistic[ann['category_name']] += 1
+        for c, count in categories_statistic.items():
+            print('[{}]: {} annotations'.format(c, count))
 
-    def get_train_instances(self, categories, verifiers, max_bbox_per_image, shuffle=True):
+    def get_train_instances(self, verifiers, max_bbox_per_image, shuffle=True):
         final_images = []
         for folder in self._train_folders.values():
             images = folder['images']
@@ -80,17 +79,18 @@ class TrassirRectShapesAnnotations:
 
             for image in images:
                 annotations = image['annotations']
-                annotations = self._filter_by_categories(categories, annotations)
                 annotations = self._filter_by_bbox_size(folder['bbox_limits'], (image['width'], image['height']),
                                                         annotations)
                 annotations = self._filter_by_annotations_count(max_bbox_per_image, annotations)
+                if self._check_skip_categories(self._skip_categories, annotations):
+                    continue
                 image['annotations'] = annotations
                 final_images.append(image)
         if shuffle:
             random.shuffle(final_images)
         return final_images
 
-    def get_validation_instances(self, categories, verifiers, max_bbox_per_image, shuffle=False):
+    def get_validation_instances(self, verifiers, max_bbox_per_image, shuffle=False):
         final_images = []
         for folder in self._validation_folders.values():
             images = folder['images']
@@ -103,10 +103,11 @@ class TrassirRectShapesAnnotations:
 
             for image in images:
                 annotations = image['annotations']
-                annotations = self._filter_by_categories(categories, annotations)
                 annotations = self._filter_by_bbox_size(folder['bbox_limits'], (image['width'], image['height']),
                                                         annotations)
                 annotations = self._filter_by_annotations_count(max_bbox_per_image, annotations)
+                if self._check_skip_categories(self._skip_categories, annotations):
+                    continue
                 image['annotations'] = annotations
                 final_images.append(image)
         if shuffle:
@@ -160,23 +161,6 @@ class TrassirRectShapesAnnotations:
                         validation_folders.append(deepcopy(folder_ops))
         self._validation_folders = validation_folders
 
-    def _retrieve_categories(self):
-        self._categories = []
-        existing_categories_names = set()
-        categories_id_by_name = {}
-
-        common_index = self._train_index + self._validation_index
-        for image in common_index:
-            for ann in image['annotations']:
-                if ann['category_name'] in existing_categories_names:
-                    ann['category_id'] = categories_id_by_name[ann['category_name']]
-                else:
-                    next_id = max(list(categories_id_by_name.values())) + 1 if len(categories_id_by_name) > 0 else 0
-                    existing_categories_names.add(ann['category_name'])
-                    categories_id_by_name[ann['category_name']] = next_id
-                    self._categories.append({'id': next_id, 'name': ann['category_name']})
-                    ann['category_id'] = categories_id_by_name[ann['category_name']]
-
     def _retrieve_verifiers(self):
         self._verifiers = {}
 
@@ -194,8 +178,6 @@ class TrassirRectShapesAnnotations:
     def _build_extra_indexes(self):
         common_index = self._train_index + self._validation_index
         self._images_by_id_index = {image['id']: image for image in common_index}
-        self._categories_by_id_index = {cat['id']: cat for cat in self._categories}
-        self._categories_by_name_index = {cat['name']: cat for cat in self._categories}
 
     @staticmethod
     def _annotation_converter(annotation):
@@ -205,6 +187,18 @@ class TrassirRectShapesAnnotations:
         del annotation['time_code']
         annotation['bbox'] = np.array(annotation['bbox'], dtype=np.float32)
         return annotation
+
+    @staticmethod
+    def _cleanup_by_categories(dataset, categories):
+        for ind, image in enumerate(dataset):
+            annotations = []
+            for ann in image['annotations']:
+                if ann['category_name'] not in categories:
+                    continue
+                ann['category_id'] = categories.index(ann['category_name'])
+                annotations.append(ann)
+            dataset[ind]['annotations'] = annotations
+        return dataset
 
     def _load_folder(self, path):
         if not os.path.exists(path):
@@ -292,22 +286,25 @@ class TrassirRectShapesAnnotations:
     @staticmethod
     def _filter_by_bbox_size(bbox_size, image_size, annotations):
         annotations = deepcopy(annotations)
-        bbox_size = list(map(lambda x: np.iinfo(np.int32).max if x == 'inf' else x, bbox_size))
+        max_size = 100
+        bbox_size = list(map(lambda x: max(min(x, max_size), 0), bbox_size))
         min_w, min_h, max_w, max_h = bbox_size
         w, h = image_size
+        max_side = max(w, h)
+        decrease_w, decrease_h = float(w)/max_side, float(h)/max_side
 
         bboxes_by_ids = [
             (ann['id'],
-             [int(round(ann['bbox'][0][0] * w)), int(round(ann['bbox'][0][1] * h)),
-              int(round(ann['bbox'][1][0] * w)), int(round(ann['bbox'][1][1] * h))])
+             [ann['bbox'][0][0]*max_size*decrease_w, ann['bbox'][0][1]*max_size*decrease_h,
+              ann['bbox'][1][0]*max_size*decrease_w, ann['bbox'][1][1]*max_size*decrease_h])
             for ann in annotations
         ]
 
         filtered_bboxes_ids = set([
             i
             for i, bbox in bboxes_by_ids
-            if (min_w <= bbox[2] - bbox[0] <= max_w) and
-               (min_h <= bbox[3] - bbox[1] <= max_h)
+            if (min_w <= (bbox[2] - bbox[0]) <= max_w) and
+               (min_h <= (bbox[3] - bbox[1]) <= max_h)
             ])
 
         return [ann for ann in annotations if ann['id'] in filtered_bboxes_ids]
@@ -326,3 +323,14 @@ class TrassirRectShapesAnnotations:
         annotations_with_areas = sorted(annotations_with_areas, reverse=True, key=lambda x: x[1])
 
         return [ann for ann, _ in annotations_with_areas[:max_count]]
+
+    @staticmethod
+    def _check_skip_categories(skip_categories, annotations):
+        if not skip_categories:
+            return False
+
+        for anno in annotations:
+            if anno['category_name'] in skip_categories:
+                return True
+
+        return False

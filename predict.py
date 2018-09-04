@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-
+import datetime
 import os
 import argparse
 import json
@@ -71,6 +71,7 @@ def _main_(args):
         if frames_processed % every_nth != 0:
             continue
 
+        orig_image = image.copy()
         boxes = get_yolo_boxes(infer_model, image, net_size, net_size, obj_thresh, nms_thresh)
         image = draw_boxes(image, boxes, model_config['labels'], obj_thresh)
 
@@ -96,6 +97,12 @@ def _main_(args):
         elif key == 68 or key == 100:  # d
             obj_thresh = obj_thresh if obj_thresh >= 0.95 else obj_thresh + 0.05
 
+        # save image
+        elif key == 83 or key == 115:  # s
+            if not os.path.exists('images'):
+                os.mkdir('images')
+            cv2.imwrite('images/{}.jpg'.format(datetime.datetime.now()), orig_image)
+
         # net_size
         elif key == 90 or key == 122:  # z
             net_size = net_size if net_size <= 64 else net_size - 32
@@ -119,6 +126,7 @@ if __name__ == '__main__':
     argparser.add_argument(
         '-c',
         '--conf',
+        default='config.json',
         help='path to configuration file')
 
     args = argparser.parse_args()

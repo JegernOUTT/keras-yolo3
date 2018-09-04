@@ -4,6 +4,8 @@ import cv2
 import copy
 import numpy as np
 from keras.utils import Sequence
+
+from augment import Augment
 from utils.bbox import BoundBox, bbox_iou, draw_boxes
 from utils.image import apply_random_scale_and_crop, random_distort_image, random_flip, correct_bounding_boxes
 
@@ -20,6 +22,7 @@ class BatchGenerator(Sequence):
                  max_net_size=608,
                  shuffle=True,
                  jitter=True,
+                 advanced_aug=False,
                  norm=None):
         self.instances = instances
         self.batch_size = batch_size
@@ -35,6 +38,8 @@ class BatchGenerator(Sequence):
         self.anchors = [BoundBox(0, 0, anchors[2 * i], anchors[2 * i + 1]) for i in range(len(anchors) // 2)]
         self.net_h = 416
         self.net_w = 416
+        self.advanced_aug = advanced_aug
+        self.advanced_image_aug = Augment()
 
         if shuffle:
             np.random.shuffle(instances)
@@ -90,7 +95,11 @@ class BatchGenerator(Sequence):
                 'ymax': int(round(a['bbox'][1][1] * h)) if int(round(a['bbox'][1][1] * h)) < h else h
             } for a in train_instance['annotations']]
 
-            img, all_objs = self._aug_image(train_instance, annotations, net_h, net_w)
+            img, all_objs = self.advanced_image_aug(train_instance, annotations,
+                                                    need_to_augment=self.advanced_aug)
+            if img is None:
+                continue
+            img, all_objs = self._aug_image(img, all_objs, net_h, net_w)
 
             for obj in all_objs:
                 # find the best anchor box for this object
@@ -142,7 +151,7 @@ class BatchGenerator(Sequence):
                 boxes = []
                 for obj in all_objs:
                     classes = np.zeros((len(self.labels)), dtype=np.float)
-                    classes[:] = 1
+                    classes[:] = 1.
                     boxes.append(BoundBox(obj['xmin'], obj['ymin'], obj['xmax'], obj['ymax'],
                                           classes=classes))
                 img = draw_boxes(img, boxes, self.labels, 0.)
@@ -164,13 +173,7 @@ class BatchGenerator(Sequence):
             self.net_h, self.net_w = net_size, net_size
         return self.net_h, self.net_w
 
-    def _aug_image(self, instance, annotations, net_h, net_w):
-        image_name = instance['file_name']
-        image = cv2.imread(image_name)[:, :, ::-1]  # RGB image
-
-        if image is None:
-            print('Cannot find ', image_name)
-
+    def _aug_image(self, image, annotations, net_h, net_w):
         image_h, image_w, _ = image.shape
 
         # determine the amount of scaling and cropping
@@ -197,7 +200,9 @@ class BatchGenerator(Sequence):
                    ("cubic", cv2.INTER_CUBIC),
                    ("lanczos4", cv2.INTER_LANCZOS4)]
         image = cv2.resize(image, (new_w, new_h), interpolation=random.choice(methods)[1])
-        image = apply_random_scale_and_crop(image, new_w, new_h, net_w, net_h, dx, dy)
+        image, paddings = apply_random_scale_and_crop(image, new_w, new_h, net_w, net_h, dx, dy)
+        if paddings: # no jitter
+            dx, dy = paddings
 
         # randomly distort hsv space
         # if not np.isclose(self.jitter, 0.0):
@@ -208,8 +213,7 @@ class BatchGenerator(Sequence):
         image = random_flip(image, flip)
 
         # correct the size and pos of bounding boxes
-        all_objs = correct_bounding_boxes(annotations, new_w, new_h, net_w, net_h, dx, dy, flip, image_w,
-                                          image_h)
+        all_objs = correct_bounding_boxes(annotations, new_w, new_h, net_w, net_h, dx, dy, flip, image_w, image_h)
 
         return image, all_objs
 

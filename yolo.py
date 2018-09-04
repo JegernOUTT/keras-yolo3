@@ -17,7 +17,7 @@ class RegressionLayer(Layer):
         self.anchors_list = anchors if type(anchors) is list else anchors.tolist()
         self.anchors = K.variable(anchors, dtype=K.floatx(), name='anchors')
         super(RegressionLayer, self).__init__(**kwargs)
-        
+
     def set_anchors(self, anchors):
         self.anchors = K.variable(anchors, dtype=K.floatx(), name='anchors')
 
@@ -27,62 +27,50 @@ class RegressionLayer(Layer):
     def call(self, x):
         input, output_layers = x[0], x[1:]
 
-        net_h, net_w = K.shape(input)[1], K.shape(input)[2]
-        net_factor = K.reshape(K.cast([net_w, net_h], dtype=K.floatx()), [1, 1, 1, 1, 2])
+        net_h_i, net_w_i = K.shape(input)[1], K.shape(input)[2]
+        net_h_f, net_w_f = K.cast(K.shape(input)[1], dtype=K.floatx()), K.cast(K.shape(input)[2], dtype=K.floatx())
+        net_factor = K.reshape([net_w_f, net_h_f], [1, 1, 1, 1, 2])
 
         batch_size = K.shape(output_layers[0])[0]
         last_dim = K.shape(output_layers[0])[3] // 3
 
-        result = None
+        results = []
         for i in range(len(output_layers)):
-            max_net_h, max_net_w = net_h * (2 ** i), net_w * (2 ** i)
+            max_net_h, max_net_w = net_h_i * (2 ** i), net_w_i * (2 ** i)
+            max_net_w_f = net_w_f * (2 ** i)
 
-            cell_x = K.cast(K.reshape(
-                K.tile(tf.range(max_net_w), [max_net_h]), (1, max_net_h, max_net_w, 1, 1)), dtype=K.floatx())
+            cell_x = K.reshape(
+                K.tile(tf.range(max_net_w_f), [max_net_h]), (1, max_net_h, max_net_w, 1, 1))
             cell_y = tf.transpose(cell_x, (0, 2, 1, 3, 4))
-            cell_grid = K.cast(K.tile(K.concatenate([cell_x, cell_y], -1), [batch_size, 1, 1, 3, 1]),
-                               dtype=K.floatx())
+            cell_grid = K.tile(K.concatenate([cell_x, cell_y], -1), [batch_size, 1, 1, 3, 1])
 
             current_anchors = self.anchors[(len(output_layers) - i - 1) * 6: (len(output_layers) - i) * 6]
             current_anchors = K.reshape(current_anchors, [1, 1, 1, 3, 2])
 
             current_pred = K.reshape(output_layers[i],
-                                     tf.concat([tf.shape(output_layers[i])[:3], tf.constant([3, -1])], axis=0))
-
-            pred_box_conf = K.expand_dims(tf.sigmoid(current_pred[..., 4]), 4)
-            pred_box_class = current_pred[..., 5:]
+                                     K.concatenate([tf.shape(output_layers[i])[:3], tf.constant([3, -1])],
+                                                   axis=0))
 
             grid_h, grid_w = K.shape(current_pred)[1], K.shape(current_pred)[2]
             grid_factor = K.reshape(K.cast([grid_w, grid_h], dtype=K.floatx()), [1, 1, 1, 1, 2])
 
-            pred_box_xy = (cell_grid[:, :grid_h, :grid_w, :, :] + tf.sigmoid(current_pred[..., :2]))
-            pred_xy = K.expand_dims(pred_box_xy / grid_factor, 4)
-            pred_xy = K.reshape(pred_xy, [batch_size, grid_h, grid_w, 3, 2])
+            pred_box_conf = K.expand_dims(tf.sigmoid(current_pred[..., 4]), 4)
+            pred_box_class = current_pred[..., 5:]
 
-            pred_box_wh = current_pred[..., 2:4]
-            pred_wh = K.expand_dims(tf.exp(pred_box_wh) * current_anchors / net_factor, 4)
-            pred_wh = K.reshape(pred_wh, [batch_size, grid_h, grid_w, 3, 2])
+            pred_box_xy = (cell_grid[:, :grid_h, :grid_w, :, :] + tf.sigmoid(current_pred[..., :2])) / grid_factor
+            pred_xy = K.reshape(pred_box_xy, [batch_size, grid_h, grid_w, 3, 2])
 
-            if result is None:
-                current_result = K.concatenate([pred_xy, pred_wh, pred_box_conf, pred_box_class], axis=4)
-                current_result_shape = K.shape(current_result)
-                current_result = K.reshape(current_result,
-                                           [batch_size,
-                                            grid_h * grid_w * current_result_shape[3],
-                                            last_dim])
-                result = current_result
+            pred_box_wh = tf.exp(current_pred[..., 2:4]) * current_anchors / net_factor
+            pred_wh = K.reshape(pred_box_wh, [batch_size, grid_h, grid_w, 3, 2])
 
-            else:
-                current_result = K.concatenate([pred_xy, pred_wh, pred_box_conf, pred_box_class], axis=4)
-                current_result_shape = K.shape(current_result)
-                current_result = K.reshape(current_result,
-                                           [batch_size,
-                                            grid_h * grid_w * current_result_shape[3],
-                                            last_dim])
-                result = K.concatenate([result, current_result], axis=1)
+            results.append(
+                K.reshape(K.concatenate([pred_xy, pred_wh, pred_box_conf, pred_box_class], axis=4),
+                          [batch_size,
+                           grid_h * grid_w * 3,
+                           last_dim])
+            )
 
-        result = K.identity(result, name='output')
-        return result
+        return tf.concat(results, axis=1, name='output')
 
     def compute_output_shape(self, input_shape):
         if input_shape[0][1] is not None:
@@ -258,22 +246,23 @@ class YoloLayer(Layer):
         Compare each true box to all anchor boxes
         """
         wh_scale = tf.exp(true_box_wh) * self.anchors / net_factor
-        wh_scale = tf.expand_dims(2 - wh_scale[..., 0] * wh_scale[..., 1], axis=4)  # the smaller the box, the bigger the scale
+        wh_scale = tf.expand_dims(2 - wh_scale[..., 0] * wh_scale[..., 1],
+                                  axis=4)  # the smaller the box, the bigger the scale
 
         xy_delta = xywh_mask * (pred_box_xy - true_box_xy) * wh_scale * self.xywh_scale
         wh_delta = xywh_mask * (pred_box_wh - true_box_wh) * wh_scale * self.xywh_scale
         conf_delta = object_mask * (pred_box_conf - true_box_conf) * self.obj_scale + (
-                    1 - object_mask) * conf_delta * self.noobj_scale
+                1 - object_mask) * conf_delta * self.noobj_scale
         class_delta = object_mask * \
                       tf.expand_dims(
                           tf.nn.sparse_softmax_cross_entropy_with_logits(labels=true_box_class, logits=pred_box_class),
                           4) * \
                       self.class_scale
 
-        loss_xy = tf.reduce_mean(tf.square(xy_delta), list(range(1,5)))
-        loss_wh = tf.reduce_mean(tf.square(wh_delta), list(range(1,5)))
-        loss_conf = tf.reduce_mean(tf.square(conf_delta), list(range(1,5)))
-        loss_class = tf.reduce_mean(class_delta, list(range(1,5)))
+        loss_xy = tf.reduce_mean(tf.square(xy_delta), list(range(1, 5)))
+        loss_wh = tf.reduce_mean(tf.square(wh_delta), list(range(1, 5)))
+        loss_conf = tf.reduce_mean(tf.square(conf_delta), list(range(1, 5)))
+        loss_class = tf.reduce_mean(class_delta, list(range(1, 5)))
 
         loss = loss_xy + loss_wh + loss_conf + loss_class
 
@@ -498,7 +487,8 @@ def _make_yolo3_model(
     # Feature Pyramid Network with 2 heads
     # First branch
     pred_yolo_1 = _conv_block(last, model_scale_coefficient,
-                              [{'filter': 1024, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 80},
+                              [{'filter': 1024, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True,
+                                'layer_idx': 80},
                                {'filter': (3 * (5 + nb_class)), 'no_scale': None, 'kernel': 1, 'stride': 1,
                                 'bnorm': False, 'leaky': False, 'layer_idx': 81}],
                               do_skip=False)
@@ -549,11 +539,16 @@ def _make_yolo3_model(
 
     pred_yolo_3 = _conv_block(x, 1,
                               [{'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 99},
-                               {'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 100},
-                               {'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 101},
-                               {'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 102},
-                               {'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 103},
-                               {'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 104},
+                               {'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True,
+                                'layer_idx': 100},
+                               {'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True,
+                                'layer_idx': 101},
+                               {'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True,
+                                'layer_idx': 102},
+                               {'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True,
+                                'layer_idx': 103},
+                               {'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True,
+                                'layer_idx': 104},
                                {'filter': (3 * (5 + nb_class)), 'no_scale': None, 'kernel': 1, 'stride': 1,
                                 'bnorm': False, 'leaky': False, 'layer_idx': 105}],
                               do_skip=False)
@@ -687,7 +682,7 @@ def _make_mobilenet_v2_model(
         debug_loss,
         model_scale_coefficient=1):
     model = MobileNetV2(input_shape, alpha=model_scale_coefficient, include_top=False, weights=None)
-    input, skip, last = model.layers[0].output, UpSampling2D(2)(model.get_layer('block_14_add').output),\
+    input, skip, last = model.layers[0].output, UpSampling2D(2)(model.get_layer('block_14_add').output), \
                         model.layers[-1].output
 
     true_boxes = Input(shape=(1, 1, 1, max_box_per_image, 4), name='input_2')
@@ -755,7 +750,7 @@ def create_full_model(
         model_scale_coefficient,
         debug_loss
 ):
-    assert(model_type in ['mobilenet2', 'tiny_yolo3', 'yolo3'])
+    assert (model_type in ['mobilenet2', 'tiny_yolo3', 'yolo3'])
 
     input_shape = None, None, 3
 

@@ -75,12 +75,18 @@ def random_distort_image(image, hue=18, saturation=1.5, exposure=1.5):
 
 
 def apply_random_scale_and_crop(image, new_w, new_h, net_w, net_h, dx, dy):
+    paddings = None
+
     if dx > 0:
         im_sized = np.pad(image, ((0, 0), (dx, 0), (0, 0)), mode='constant', constant_values=127)
     else:
         im_sized = image[:, -dx:, :]
     if (new_w + dx) < net_w:
-        im_sized = np.pad(im_sized, ((0, 0), (0, net_w - (new_w + dx)), (0, 0)), mode='constant', constant_values=127)
+        padding = net_w - (new_w + dx)
+        before = np.random.randint(padding + 1)
+        after = padding - before
+        im_sized = np.pad(im_sized, ((0, 0), (before, after), (0, 0)), mode='constant', constant_values=127)
+        paddings = [before, 0]
 
     if dy > 0:
         im_sized = np.pad(im_sized, ((dy, 0), (0, 0), (0, 0)), mode='constant', constant_values=127)
@@ -88,6 +94,10 @@ def apply_random_scale_and_crop(image, new_w, new_h, net_w, net_h, dx, dy):
         im_sized = im_sized[-dy:, :, :]
 
     if (new_h + dy) < net_h:
-        im_sized = np.pad(im_sized, ((0, net_h - (new_h + dy)), (0, 0), (0, 0)), mode='constant', constant_values=127)
+        padding = net_h - (new_h + dy)
+        before = np.random.randint(padding + 1)
+        after = padding - before
+        im_sized = np.pad(im_sized, ((before, after), (0, 0), (0, 0)), mode='constant', constant_values=127)
+        paddings = [0, before]
 
-    return im_sized[:net_h, :net_w, :]
+    return im_sized[:net_h, :net_w, :], paddings

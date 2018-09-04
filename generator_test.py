@@ -21,25 +21,18 @@ def _main_(args):
     with open(config_path) as config_buffer:
         config = json.load(config_buffer)
 
-    train_datasets = [{**ds, 'path': os.path.join(config['train']['images_dir'], ds['path'])}
-                      for ds in config['train']['train_datasets']]
     validation_datasets = [{**ds, 'path': os.path.join(config['train']['images_dir'], ds['path'])}
                            for ds in config['train']['validation_datasets']]
 
-    trassir_annotation = TrassirRectShapesAnnotations(train_datasets, validation_datasets)
+    trassir_annotation = TrassirRectShapesAnnotations([], validation_datasets, config['model']['labels'], config['model']['skip_labels'])
     trassir_annotation.load()
     trassir_annotation.print_statistics()
-    train = trassir_annotation.get_train_instances(config['model']['labels'],
-                                                   config['train']['verifiers'],
-                                                   config['model']['max_box_per_image'])
-    print('Train len: ', len(train))
-    validation = trassir_annotation.get_validation_instances(config['model']['labels'],
-                                                             config['train']['verifiers'],
+    validation = trassir_annotation.get_validation_instances(config['train']['verifiers'],
                                                              config['model']['max_box_per_image'])
     print('Val len: ', len(validation))
 
     generator = BatchGenerator(
-        instances=train,
+        instances=validation,
         anchors=config['model']['anchors'],
         labels=config['model']['labels'],
         downsample=32,
@@ -49,13 +42,14 @@ def _main_(args):
         max_net_size=config['model']['max_input_size'],
         shuffle=True,
         jitter=jitter,
-        norm=None
+        norm=None,
+        advanced_aug=False
     )
 
     for i in range(len(generator)):
         for image in generator[i][0][0]:
             cv2.imshow('image', cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_RGB2BGR))
-            key = cv2.waitKeyEx(0)
+            key = cv2.waitKeyEx(0) & 0xFF
             if key == 27:
                 return
 
@@ -67,10 +61,12 @@ if __name__ == '__main__':
     argparser.add_argument(
         '-c',
         '--conf',
+        default='config.json',
         help='path to configuration file')
     argparser.add_argument(
         '-j',
         '--jitter',
+        default=0.0,
         help='augmentation strength')
 
     args = argparser.parse_args()
