@@ -1,7 +1,8 @@
 import argparse
 import json
 import os
-import keras
+import shutil
+import site
 import keras.backend as K
 
 import tensorflow as tf
@@ -17,6 +18,13 @@ model_name = '{}_model.h5'
 
 def is_tiny_model(model_name):
     return model_name in ['tiny_yolo3', 'mobilenet2']
+
+
+def find_filename(name, paths):
+    for path in paths:
+        for root, dirs, files in os.walk(path):
+            if name in files:
+                return os.path.join(root, name)
 
 
 def _main_(args):
@@ -53,6 +61,26 @@ def _main_(args):
                          ".",
                          snapshot_name + '.pb',
                          as_text=False)
+
+    optimize_for_inference_filename = find_filename('optimize_for_inference.py', site.getsitepackages())
+    if optimize_for_inference_filename is None:
+        print('Cannot optimize graph for inference, check optimize_for_inference.py is exists in {}'.format(
+            site.getsitepackages()))
+    else:
+        result = os.system('{} {} --input="{}" --frozen-graph=True --input_names="{}" '
+                           '--output_names="{}" --output="{}"'.format(
+            shutil.which('python3'),
+            optimize_for_inference_filename,
+            snapshot_name + '.pb',
+            model.input_names[0] if len(model.input_names) == 1 else ','.join(model.input_names),
+            output_names[0] if len(output_names) == 1 else ','.join(output_names),
+            snapshot_name + '.pb'
+        ))
+
+        if result == 0:
+            print('Graph was optimized for inference')
+        else:
+            print('Graph was not optimized for inference due some error, check stderr')
 
 
 if __name__ == '__main__':
