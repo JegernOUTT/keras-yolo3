@@ -38,29 +38,32 @@ def draw_boxes(image: np.array,
     return np.array(image.convert('RGB'))
 
 
-def get_yolo3_output_with_features(model: keras.Model,
-                                   image: np.array,
-                                   net_h: int,
-                                   net_w: int,
-                                   obj_thresh: float,
-                                   nms_thresh: float) -> Tuple[np.array, list]:
+def get_yolo3_output(model: keras.Model,
+                     image: np.array,
+                     infer_net_size: int,
+                     classifier_net_size: int,
+                     obj_thresh: float,
+                     nms_thresh: float) -> Tuple[list, np.array]:
     image_h, image_w, _ = image.shape
-    new_image = preprocess_input(image, net_h, net_w)
-
-    inp = model.input  # input placeholder
-    layers_names = ['leaky_10', 'leaky_35', 'leaky_60', 'leaky_78', 'regression_layer_1']
-    outputs = [layer.output for layer in model.layers if layer.name in layers_names]
-    functor = keras.backend.function([inp], outputs)
-
-    layer_outs = functor([new_image])
-    masknet_output, output = layer_outs[:4], layer_outs[4]
+    new_image = preprocess_input(image, infer_net_size, infer_net_size)
+    output = model.predict(new_image)
 
     # Get boxes from yolo prediction
     boxes = decode_netout(output, obj_thresh)
-    boxes = correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
+    boxes = correct_yolo_boxes(boxes, image_h, image_w, infer_net_size, infer_net_size)
     do_nms(boxes, nms_thresh)
+
     boxes = [b for b in boxes if b.classes[0] > obj_thresh]
 
-    return masknet_output, boxes
+    crops = np.zeros((len(boxes), classifier_net_size, classifier_net_size, 3))
+    for i, b in enumerate(boxes):
+        crop = image[b.ymin:b.ymax, b.xmin:b.xmax, :] / 255.
+        try:
+            crop = cv2.resize(crop, (classifier_net_size, classifier_net_size), cv2.INTER_LANCZOS4)
+        except cv2.error:
+            continue
+        crops[i] = crop
+
+    return boxes, crops
 
 

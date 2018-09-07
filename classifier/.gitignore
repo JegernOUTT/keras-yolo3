@@ -163,6 +163,7 @@ fabric.properties
 *.jpg
 *.png
 *.jpeg
+*.tmp*
 
 # Videos
 *.mp4
