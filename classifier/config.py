@@ -1,6 +1,6 @@
 import os
 
-common_datasets_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/test'
+common_datasets_path = '/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/peoples'
 
 config = {
     'categories': ['recumbent_person', 'person'],
@@ -8,30 +8,30 @@ config = {
     'datasets': {
         'train': [
             {
-                'path': 'recumbent_people_train',
+                'path': 'recumbent/train',
                 'images_count': 'all',
                 'only_verified': True,
                 'bbox_limits': [0, 0, 100, 100],
                 'recursive': False
             },
             {
-                'path': '../samples/peoples/office',
+                'path': 'office',
                 'images_count': 'all',
                 'only_verified': True,
                 'bbox_limits': [0, 0, 100, 100],
-                'recursive': False
+                'recursive': True
             },
             {
-                'path': '../samples/peoples/shop',
+                'path': 'shop',
                 'images_count': 'all',
                 'only_verified': True,
                 'bbox_limits': [0, 0, 100, 100],
-                'recursive': False
+                'recursive': True
             },
         ],
         'val': [
             {
-                'path': 'recumbent_people_val',
+                'path': 'recumbent/val',
                 'images_count': 'all',
                 'only_verified': True,
                 'bbox_limits': [0, 0, 100, 100],
@@ -40,7 +40,7 @@ config = {
         ]
     },
     'train': {
-        'net_size': 256,
+        'net_size': 320,
         'max_roi_count': 100,
         'batch_size': 32,
         'epochs': 1000,
@@ -57,11 +57,11 @@ config = {
     'predict': {
         'infer_net_size': 416,
         'classifier_net_size': 256,
-        'classifier_batch_size': 8,
+        'classifier_batch_size': 4,
         'confidence': 0.9,
         'nms_threshold': 0.4,
         'every_nth_frame': 5,
-        'cuda_devices': '0',
+        'cuda_devices': '1',
         'infer_model_path': '../snapshots/current_person_recum/yolo3_model.h5',
         'classifier_weights_path': './classifier.h5',
         'videofile_path': '/mnt/nfs/Videos/Лежачие люди/лежачие люди видео/Worlds First Planking Flash Mob on YT.mp4'

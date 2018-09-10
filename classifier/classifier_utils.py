@@ -14,6 +14,9 @@ from utils.utils import preprocess_input, decode_netout, do_nms, correct_yolo_bo
 def get_normalized_image(filename: str) -> np.array:
     assert os.path.exists(filename)
     image = cv2.imread(filename)
+    if image is None:
+        print(filename)
+    assert image is not None
     image = image[:, :, ::-1]
     return image / 255.
 
@@ -65,5 +68,4 @@ def get_yolo3_output(model: keras.Model,
         crops[i] = crop
 
     return boxes, crops
-
 

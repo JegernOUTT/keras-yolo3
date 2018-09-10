@@ -59,7 +59,7 @@ if __name__ == '__main__':
         print('Loaded {} weights'.format(config['train']['classifier_weights_path']))
     classifier_model.summary()
 
-    classifier_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    classifier_model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
     classifier_model.fit_generator(
         generator=train_generator,
         steps_per_epoch=len(train_generator),

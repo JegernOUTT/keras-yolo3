@@ -56,10 +56,17 @@ class ClassifierBatchGenerator(Sequence):
                     continue
 
                 x1, y1, x2, y2 = b['bbox'][0][0], b['bbox'][0][1], b['bbox'][1][0], b['bbox'][1][1]
-                x1 = max(min(int(x1 * w), w), 0)
-                y1 = max(min(int(y1 * h), h), 0)
-                x2 = max(min(int(x2 * w), w), 0)
-                y2 = max(min(int(y2 * h), h), 0)
+                b_w = x2 - x1
+                
+                x1 = max(min(int((x1 - (b_w / 2)) * w), w), 0)
+                y1 = max(min(int((y1 - (b_w / 2)) * h), h), 0)
+                x2 = max(min(int((x2 + (b_w / 2)) * w), w), 0)
+                y2 = max(min(int((y2 + (b_w / 2)) * h), h), 0)
+
+                if x1 == x2 or y1 == y2:
+                    continue
+
+                assert x1 < x2 and y1 < y2
 
                 filename = '{}__{}_{}.jpg'.format(b['category_name'], os.path.basename(item['file_name']), i)
                 filename = os.path.join(self.tmp_path, filename)

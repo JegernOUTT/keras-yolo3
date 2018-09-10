@@ -64,7 +64,7 @@ if __name__ == '__main__':
             for j in range(len(out)):
                 classes[i + j] = out[j]
 
-        boxes = [[b.xmin, b.ymin, b.xmax, b.ymax, np.max(classes[i]), np.argmax(classes[i])]
+        boxes = [[b.xmin, b.ymin, b.xmax, b.ymax, np.max(classes[i]), 1 if np.isclose(classes[i, np.argmax(classes[i])], 0.) else np.argmax(classes[i])]
                  for i, b in enumerate(boxes)]
         image = draw_boxes(image, boxes, config['categories'])
         cv2.imshow('image', image)

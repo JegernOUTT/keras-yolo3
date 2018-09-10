@@ -22,4 +22,4 @@ def focal_loss(gamma=2., alpha=.25):
 
 def create_classifier_model(image_shape: Tuple[IntOrNone, IntOrNone, int],
                             classes_count: int) -> keras.Model:
-    return keras.applications.ResNet50(input_shape=image_shape, weights=None, classes=classes_count)
+    return keras.applications.InceptionResNetV2(input_shape=image_shape, weights=None, classes=classes_count)
