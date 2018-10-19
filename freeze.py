@@ -7,7 +7,6 @@ import keras.backend as K
 
 import tensorflow as tf
 from keras.engine.saving import load_model
-from keras_applications.mobilenet_v2 import relu6
 from tensorflow.python.framework import graph_util, graph_io
 
 from utils.utils import add_regression_layer_if_not_exists
@@ -42,8 +41,6 @@ def _main_(args):
     anchors = config['model']['anchors'] if not is_tiny else config['model']['tiny_anchors']
 
     custom_objects = {'RegressionLayer': RegressionLayer}
-    if config['inference']['is_mobilenet2']:
-        custom_objects = {'relu6': relu6}
     model = load_model(snapshot_name, custom_objects=custom_objects)
     model = add_regression_layer_if_not_exists(model, anchors)
     model.summary()

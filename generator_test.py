@@ -22,7 +22,7 @@ def _main_(args):
         config = json.load(config_buffer)
 
     validation_datasets = [{**ds, 'path': os.path.join(config['train']['images_dir'], ds['path'])}
-                           for ds in config['train']['validation_datasets']]
+                           for ds in config['train']['train_datasets']]
 
     trassir_annotation = TrassirRectShapesAnnotations([], validation_datasets, config['model']['labels'], config['model']['skip_labels'])
     trassir_annotation.load()
@@ -43,7 +43,7 @@ def _main_(args):
         shuffle=True,
         jitter=jitter,
         norm=None,
-        advanced_aug=False
+        advanced_aug=True
     )
 
     for i in range(len(generator)):

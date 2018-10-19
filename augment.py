@@ -69,12 +69,12 @@ class Augment:
     def __init__(self):
         self.seq = iaa.Sequential(
             [
-                iaa.Crop(percent=(0.1, 0.5)),
+                iaa.Crop(percent=(0.0, 0.01)),
                 iaa.Fliplr(0.5),
                 iaa.Flipud(0.01),
                 iaa.Emboss(alpha=(0.0, 1.0), strength=(0.5, 1.5)),
                 iaa.ContrastNormalization((0.5, 1.5)),
-                iaa.Affine(shear=(-1, 1), cval=128)
+                iaa.Affine(shear=(-5, 5), cval=128)
             ])
 
     def __call__(self, instance, annotations, need_to_augment=True):

@@ -2,56 +2,74 @@
   "model": {
     "type": "yolo3",
     "need_to_freeze_base": false,
-    "min_input_size": 320,
-    "max_input_size": 768,
-    "anchors": [10,37, 17,71, 28,104, 28,50, 42,79, 45,148, 70,92, 77,181, 193,310],
+    "min_input_size": 416,
+    "max_input_size": 608,
+    "anchors": [12,30, 14,64, 25,93, 29,41, 43,76, 44,143, 77,92, 79,182, 246,277],
     "tiny_anchors": [10,14, 23,27, 37,58, 81,82, 135,169, 344,319],
-    "max_box_per_image": 200,
+    "max_box_per_image": 100,
     "model_scale_coefficient": 1,
     "labels": [
-      "head"
+      "person", "car", "2_wheel"
     ],
-    "skip_labels": []
+    "skip_labels": [
+      "persongroup", "cargroup", "2_wheelgroup"
+    ]
   },
   "train": {
-    "images_dir": "/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/samples/peoples/",
+    "images_dir": "/mnt/nfs/Data/detector_markup",
     "train_datasets": [
       {
-        "path": "foreign_datasets/crowd_human/CrowdHuman_train/Images",
-        "images_count": "all",
-        "only_verified": false,
-        "bbox_limits": [0, 0, 100, 100],
-        "recursive": true
-      }
-    ],
-    "validation_datasets": [
-      {
-        "path": "validation",
+        "path": "person_head_car_2_wheel_train/train",
         "images_count": "all",
         "only_verified": true,
         "bbox_limits": [0, 0, 100, 100],
         "recursive": true
+      },{
+        "path": "foreign_datasets/cityscapes_with_anns/train",
+        "images_count": "all",
+        "only_verified": false,
+        "bbox_limits": [2, 2, 100, 100],
+        "recursive": true
+      },{
+        "path": "foreign_datasets/coco/images/train2017",
+        "images_count": "all",
+        "only_verified": false,
+        "bbox_limits": [0, 0, 100, 100],
+        "recursive": true
+      },{
+        "path": "foreign_datasets/pedestrian_detection_trainval/train_split10_1",
+        "images_count": "all",
+        "only_verified": true,
+        "bbox_limits": [1, 1, 100, 100],
+        "recursive": true
       }
     ],
+    "validation_datasets": [{
+        "path": "foreign_datasets/cityscapes_with_anns/val",
+        "images_count": "all",
+        "only_verified": false,
+        "bbox_limits": [2, 2, 100, 100],
+        "recursive": true
+    }],
     "train_times": 1,
-    "batch_size": 4,
-    "learning_rate": 5e-4,
+    "batch_size": 24,
+    "learning_rate": 1e-3,
     "nb_epochs": 200,
     "warmup_epochs": 0,
-    "ignore_thresh": 0.5,
-    "gpus": "0",
-    "verifiers": ["sergey_head"],
-    "log_prefix": "head",
-    "snapshots_path": "./snapshots/crowd_head/",
+    "ignore_thresh": 0.7,
+    "gpus": "0,1",
+    "verifiers": ["sergey", "julia"],
+    "log_prefix": "person_car",
+    "snapshots_path": "./snapshots/person_car/",
     "debug": true
   },
   "inference": {
     "input_size": 416,
     "obj_thresh": 0.9,
-    "nms_thresh": 0.15,
+    "nms_thresh": 0.3,
     "gpu": "0",
-    "snapshots_path": "./snapshots/current_head/",
-    "input_path": "/media/svakhreev/022cfb2b-3c52-4dfe-a5fb-c5fe826db5e3/shop/Касса№1-2-2.avi",
+    "snapshots_path": "./snapshots/person_car/",
+    "input_path": "/mnt/nfs/Videos/peoples_videos/outdoor/bright_by_moscow_time/makdonalds.ts.mp4",
     "process_nth_frame": 1,
     "need_to_save_output": true,
     "output_path": "last_predicted.mp4",
@@ -63,7 +81,7 @@
       "grid_scales": [1, 1, 1],
       "obj_scale": 5,
       "noobj_scale": 1,
-      "xywh_scale": 1.5,
+      "xywh_scale": 1,
       "class_scale": 1
     }
   },

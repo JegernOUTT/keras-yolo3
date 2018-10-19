@@ -1,13 +1,8 @@
 from typing import Tuple, Union
 
 import keras
-import keras_resnet.models
 import keras.backend as K
-import keras.layers as KL
 import tensorflow as tf
-from keras.engine.topology import Layer
-from keras.layers import Input
-from keras.models import Model
 
 IntOrNone = Union[int, None]
 

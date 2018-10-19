@@ -18,7 +18,7 @@ def _sigmoid(x):
 
 def evaluate(model,
              generator,
-             iou_threshold=0.2,
+             iou_threshold=0.5,
              obj_thresh=0.5,
              nms_thresh=0.3,
              net_h=608,
@@ -174,7 +174,7 @@ def do_nms(boxes, nms_thresh):
         return
 
     for c in range(nb_class):
-        sorted_indices = np.argsort([-box.classes[c] for box in boxes])
+        sorted_indices = np.argsort([box.c for box in boxes])
 
         for i in range(len(sorted_indices)):
             index_i = sorted_indices[i]

@@ -5,13 +5,12 @@ import argparse
 import json
 import cv2
 import keras
-from keras_applications.mobilenet_v2 import relu6
 
 from utils.utils import get_yolo_boxes, add_regression_layer_if_not_exists
 from utils.bbox import draw_boxes
 from keras.models import load_model
 
-from yolo import RegressionLayer
+from yolo import RegressionLayer, BasicRFB
 
 model_name = '{}_model.h5'
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -45,9 +44,7 @@ def _main_(args):
     if not os.path.exists(input_path):
         raise FileNotFoundError(input_path)
 
-    custom_objects = {'RegressionLayer': RegressionLayer}
-    if config['is_mobilenet2']:
-        custom_objects = {'relu6': relu6}
+    custom_objects = {'RegressionLayer': RegressionLayer, 'BasicRFB': BasicRFB}
     infer_model = load_model(snapshot_name, custom_objects=custom_objects)
     infer_model = add_regression_layer_if_not_exists(infer_model, anchors)
 

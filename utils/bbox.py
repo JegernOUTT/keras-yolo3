@@ -72,14 +72,9 @@ def draw_boxes(image, boxes, labels, obj_thresh):
     image = Image.fromarray(image)
     draw = ImageDraw.Draw(image, "RGBA")
 
-    for box in boxes:
-        label_str = ''
-        label = -1
-
-        for i in range(len(labels)):
-            if box.classes[i] > obj_thresh:
-                label_str += labels[i]
-                label = i
+    for box in filter(lambda x: x.get_score() > obj_thresh, boxes):
+        label = box.get_label()
+        label_str = labels[label]
 
         if label >= 0:
             draw.text((box.xmin + 5, box.ymin + 5), label_str)

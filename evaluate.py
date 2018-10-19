@@ -5,7 +5,6 @@ import json
 import os
 
 from keras.models import load_model
-from keras_applications.mobilenet_v2 import relu6
 
 from generator import BatchGenerator
 from preprocessing import TrassirRectShapesAnnotations
@@ -57,8 +56,6 @@ def _main_(args):
     )
 
     custom_objects = {'RegressionLayer': RegressionLayer}
-    if config['inference']['is_mobilenet2']:
-        custom_objects = {'relu6': relu6}
     infer_model = load_model(snapshot_name, custom_objects=custom_objects)
     infer_model = add_regression_layer_if_not_exists(infer_model, anchors)
 

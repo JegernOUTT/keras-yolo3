@@ -151,7 +151,7 @@ class BatchGenerator(Sequence):
                 boxes = []
                 for obj in all_objs:
                     classes = np.zeros((len(self.labels)), dtype=np.float)
-                    classes[:] = 1.
+                    classes[obj['category_id']] = 1.
                     boxes.append(BoundBox(obj['xmin'], obj['ymin'], obj['xmax'], obj['ymax'],
                                           classes=classes))
                 img = draw_boxes(img, boxes, self.labels, 0.)

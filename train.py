@@ -9,7 +9,7 @@ import numpy as np
 import tensorflow as tf
 import keras.backend as K
 from keras.callbacks import LearningRateScheduler
-from keras.optimizers import Adam
+from keras.optimizers import Adam, SGD
 
 from callback import CustomModelCheckpoint, CustomTensorBoard
 from generator import BatchGenerator
@@ -63,7 +63,7 @@ def create_callbacks(config, infer_model, validation_generator, hvd=None):
         write_images=True)
 
     reduce_lrt = LearningRateScheduler(
-        lambda x: config['train']['learning_rate'] if x < 20 else config['train']['learning_rate'] * 0.1)
+        lambda x: config['train']['learning_rate'] * np.exp(-0.04 * x))
 
     callbacks = [
         tensorboard_map,
@@ -242,8 +242,10 @@ def _main_(args):
         debug_loss=config["loss_config"]["debug_loss"]
     )
 
-    optimizer = Adam(
-        lr=config['train']['learning_rate']
+    optimizer = SGD(
+        lr=config['train']['learning_rate'],
+        nesterov=True,
+        clipvalue=0.01
     )
     if args.horovod:
         optimizer = hvd.DistributedOptimizer(optimizer)

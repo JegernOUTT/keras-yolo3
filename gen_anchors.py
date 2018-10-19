@@ -1,23 +1,10 @@
+import os
 import random
 import argparse
 import numpy as np
 
-from preprocessing import load_images
+from preprocessing import TrassirRectShapesAnnotations
 import json
-
-argparser = argparse.ArgumentParser()
-
-argparser.add_argument(
-    '-c',
-    '--conf',
-    default='config.json',
-    help='path to configuration file')
-
-argparser.add_argument(
-    '-a',
-    '--anchors',
-    default=9,
-    help='number of anchors to use')
 
 
 def IOU(ann, centroids):
@@ -103,23 +90,26 @@ def run_kmeans(ann_dims, anchor_num):
         old_distances = distances.copy()
 
 
-def main(argv):
+def _main_(args):
     config_path = args.conf
-    num_anchors = args.anchors
+    num_anchors = 9
 
     with open(config_path) as config_buffer:
         config = json.loads(config_buffer.read())
 
-    labels = config['model']['labels']
-    train_imgs, valid_ints = load_images(config)
-    from train import filter_categories
-    filter_categories(train_imgs, valid_ints, labels)
+    validation_datasets = [{**ds, 'path': os.path.join(config['train']['images_dir'], ds['path'])}
+                           for ds in config['train']['train_datasets']]
+
+    trassir_annotation = TrassirRectShapesAnnotations([], validation_datasets, config['model']['labels'],
+                                                      config['model']['skip_labels'])
+    trassir_annotation.load()
+    trassir_annotation.print_statistics()
+    data = trassir_annotation.get_validation_instances(config['train']['verifiers'], config['model']['max_box_per_image'])
 
     # run k_mean to find the anchors
     annotation_dims = []
-    for image, annotations in train_imgs['images_with_annotations']:
-        print(image['file_name'])
-        for obj in annotations:
+    for image in data:
+        for obj in image['annotations']:
             bbox = obj['bbox']
             relative_w = bbox[1][0] - bbox[0][0]
             relative_h = bbox[1][1] - bbox[0][1]
@@ -129,10 +119,19 @@ def main(argv):
     centroids = run_kmeans(annotation_dims, num_anchors)
 
     # write anchors to file
-    print('\naverage IOU for', num_anchors, 'anchors:', '%0.2f' % avg_IOU(annotation_dims, centroids))
+    print('\nAverage IOU for', num_anchors, 'anchors:', '%0.2f' % avg_IOU(annotation_dims, centroids))
     print_anchors(centroids)
 
 
 if __name__ == '__main__':
+    argparser = argparse.ArgumentParser(
+        description='Evaluate YOLO_v3 model on any dataset')
+    argparser.add_argument(
+    	'-c',
+    	'--conf',
+    	default='config.json',
+    	help='path to configuration file')
+
     args = argparser.parse_args()
-    main(args)
+    _main_(args)
+
